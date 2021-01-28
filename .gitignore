@@ -1,0 +1,6 @@
+.vscode/settings.json
+
+data/csv
+data/mols
+
+fingerprint/generated

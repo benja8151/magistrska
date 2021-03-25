@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from rdkit import Chem
 import tensorflow as tf
 import nfp
 import torch
@@ -21,12 +22,18 @@ def atom_featurizer(atom):
     """ Return an string representing the atom type
     """
 
+    # 10 params
     return str((
         atom.GetSymbol(),
+        atom.GetAtomicNum(),
+        atom.GetFormalCharge(),
         atom.GetIsAromatic(),
         nfp.get_ring_size(atom, max_size=6),
         atom.GetDegree(),
-        atom.GetTotalNumHs(includeNeighbors=True)
+        atom.GetTotalNumHs(includeNeighbors=True),
+        atom.GetNumRadicalElectrons(),
+        atom.GetMass(),
+        Chem.GetPeriodicTable().GetRvdw(atom.GetAtomicNum())
     ))
 
 def bond_featurizer(bond, flipped=False):

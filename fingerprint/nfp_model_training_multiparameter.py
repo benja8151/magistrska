@@ -8,19 +8,24 @@ from rdkit import Chem
 print(f"tensorflow {tf.__version__}")
 print(f"nfp {nfp.__version__}")
 
-batch_size = 64
+batch_size = 512
 num_features = 64  # Controls the size of the model
-fp_size = 2
+fp_size = 8
 units = 64
 heads = 1
-epochs = 50
+epochs = 20
 test_train_split = [25000, 50000]
+loss_function = 'mae'
 
-# Load the input data, here YSI (10.1016/j.combustflame.2017.12.005)
-csv_data = pd.read_csv('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/fingerprint/data/ysi.csv')
+n_outputs = 3 #A, B, C
+
+# Load the input data
+csv_data = pd.read_csv('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/fingerprint/data/qm9.csv')
 
 # Split the data into training, validation, and test sets
-valid, test, train = np.split(csv_data.SMILES.sample(frac=1., random_state=1), test_train_split)
+valid, test, train = np.split(csv_data.SMILES.sample(frac=1), test_train_split)
+
+print(len(valid), len(test), len(train))
 
 # Define how to featurize the input molecules
 def atom_featurizer(atom):
@@ -76,26 +81,25 @@ for smiles in train:
 # molecules in the same batch have the same number of atoms (we pad with zeros,
 # hence why the atom and bond types above start with 1 as the unknown class)
 train_dataset = tf.data.Dataset.from_generator(
-    lambda: ((preprocessor.construct_feature_matrices(row.SMILES, train=False), row.YSI)
+    lambda: ((preprocessor.construct_feature_matrices(row.SMILES, train=False), (row.A, row.B, row.C))
              for i, row in csv_data[csv_data.SMILES.isin(train)].iterrows()),
-    output_types=(preprocessor.output_types, tf.float32),
-    output_shapes=(preprocessor.output_shapes, []))\
+    output_types=(preprocessor.output_types, (tf.float32, tf.float32, tf.float32)),
+    output_shapes=(preprocessor.output_shapes, ([], [], [],)))\
     .cache().shuffle(buffer_size=200)\
     .padded_batch(batch_size=batch_size, 
-                  padded_shapes=(preprocessor.padded_shapes(), []),
-                  padding_values=(preprocessor.padding_values, 0.))\
+                  padded_shapes=(preprocessor.padded_shapes(), ([], [], [],)),
+                  padding_values=(preprocessor.padding_values, (0., 0., 0.)))\
     .prefetch(tf.data.experimental.AUTOTUNE)
 
-
 valid_dataset = tf.data.Dataset.from_generator(
-    lambda: ((preprocessor.construct_feature_matrices(row.SMILES, train=False), row.YSI)
+    lambda: ((preprocessor.construct_feature_matrices(row.SMILES, train=False), (row.A, row.B, row.C))
              for i, row in csv_data[csv_data.SMILES.isin(valid)].iterrows()),
-    output_types=(preprocessor.output_types, tf.float32),
-    output_shapes=(preprocessor.output_shapes, []))\
+    output_types=(preprocessor.output_types, (tf.float32, tf.float32, tf.float32)),
+    output_shapes=(preprocessor.output_shapes, ([], [], [],)))\
     .cache()\
     .padded_batch(batch_size=batch_size, 
-                  padded_shapes=(preprocessor.padded_shapes(), []),
-                  padding_values=(preprocessor.padding_values, 0.))\
+                  padded_shapes=(preprocessor.padded_shapes(), ([], [], [],)),
+                  padding_values=(preprocessor.padding_values, (0., 0., 0.)))\
     .prefetch(tf.data.experimental.AUTOTUNE)
 
 ## Define the keras model
@@ -135,14 +139,14 @@ for _ in range(3):  # Do the message passing
 # Since the final prediction is a single, molecule-level property (YSI), we 
 # reduce the last global state to a single prediction.
 fp_out = layers.Dense(fp_size)(global_state)
-param_prediction = layers.Dense(1)(global_state)
+param_prediction = layers.Dense(n_outputs)(global_state)
 
 # Construct the tf.keras models - one with YSI output, the other with FP
 model_param_prediction = tf.keras.Model([atom, bond, connectivity], [param_prediction])
 model_fp = tf.keras.Model([atom, bond, connectivity], [fp_out])
 
-model_param_prediction.compile(loss='mae', optimizer=tf.keras.optimizers.Adam(1E-3))
-model_fp.compile(loss='mae', optimizer=tf.keras.optimizers.Adam(1E-3))
+model_param_prediction.compile(loss=loss_function, optimizer=tf.keras.optimizers.Adam(1E-3))
+model_fp.compile(loss=loss_function, optimizer=tf.keras.optimizers.Adam(1E-3))
 
 # Fit the model - only fit ysi model. The first epoch is slower, since it needs to cache
 # the preprocessed molecule inputs
@@ -176,7 +180,7 @@ all_dataset = tf.data.Dataset.from_generator(
 # Here are the predictions on the test set
 test_predictions = model_param_prediction.predict(test_dataset)
 #test_db_values = test_dataset.homo.values
-test_db_values = csv_data.YSI.values
+test_db_values = [csv_data.A.values, csv_data.B.values, csv_data.C.values] 
 #print(ysi.set_index('SMILES').reindex(test))
 
 """ 
@@ -189,11 +193,13 @@ print(np.round(np.divide(np.abs(all_predictions.flatten() - all_reindexed_values
 test_db_reindexed_values = []
 
 for index, prediction in test.items():
-    test_db_reindexed_values.append(test_db_values[index])
+    test_db_reindexed_values.append([test_db_values[0][index], test_db_values[1][index], test_db_values[2][index]])
+
+#print(list(zip(test_predictions, test_db_reindexed_values)))
 
 
 #print(test_db_reindexed_values - test_predictions)
-print(np.abs(test_db_reindexed_values - test_predictions.flatten()).mean())
+#print(np.abs(test_db_reindexed_values - test_predictions.flatten()).mean())
 #print(tf.keras.losses.mean_absolute_percentage_error(test_db_values, test_predictions.flatten()))
 
 

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 reactions_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/ParsedAll'
 fingerprints_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/fingerprint/generated'
-reactions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/data/reactions.csv'
+reactions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/encyme_reaction_classification/data/reactions.csv'
 
 fp_length = 8
 
@@ -107,7 +107,7 @@ def binary_acc(y_pred, y_test):
     acc = torch.round(acc * 100)
     return acc
 
-dataset = ReactionsDataset('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/data/reactions.csv')
+dataset = ReactionsDataset('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/encyme_reaction_classification/data/reactions.csv')
 
 # split dataset
 validation_split = .2

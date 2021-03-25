@@ -1,5 +1,4 @@
 import os
-from numpy.core.numeric import False_
 import pandas as pd
 
 def createReactionsCSV(all_dir, hsa_dir, output_dir):
@@ -20,5 +19,5 @@ def createReactionsCSV(all_dir, hsa_dir, output_dir):
 createReactionsCSV(
     'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/ParsedAll',
     'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/ParsedHsa',
-    'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/data/reactions.csv'
+    'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/encyme_reaction_classification/data/reactions.csv'
 )

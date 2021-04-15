@@ -36,6 +36,6 @@ def prepareDataset(filetype, input_dir, output_dir):
 
 prepareDataset(
     '.mol',
-    'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsAll',
+    'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete',
     'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/smiles/smilesAll.csv'
 )

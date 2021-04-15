@@ -14,12 +14,55 @@ reactions_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dat
 fingerprints_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/fingerprint/generated'
 reactions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/reaction_type_classification/data/reactions.csv'
 
-n_types = 7
+n_types = 8
 fp_length = 8
-epochs = 100
+epochs = 20
 batch_size = 16
 learning_rate = 0.001
 
+def createCombinedFingerprint(reaction, reactions_dir, fingerprints_dir, fp_length=8):
+    try: 
+        reaction_file = open(reactions_dir + "/" + reaction, 'r')
+        
+        reaction_split = reaction_file.read().split('-')
+        left_side = reaction_split[0].split(',')
+        right_side = reaction_split[1].split(',')
+
+        fp_combined = torch.load(fingerprints_dir + '/' + right_side[0] + '.pt').numpy()
+        fp_combined += torch.load(fingerprints_dir + '/' + right_side[1] + '.pt').numpy()
+        fp_combined -= torch.load(fingerprints_dir + '/' + left_side[0] + '.pt').numpy()
+        fp_combined -= torch.load(fingerprints_dir + '/' + left_side[1] + '.pt').numpy()
+        
+        return fp_combined
+
+    except:
+        return None
+
+# returns 4 fingerprints - different order of reactants
+def createReactionFingerprints(reaction, reactions_dir, fingerprints_dir, fp_length=8):
+    try: 
+        reaction_file = open(reactions_dir + "/" + reaction, 'r')
+        
+        reaction_split = reaction_file.read().split('-')
+        left_side = reaction_split[0].split(',')
+        right_side = reaction_split[1].split(',')
+
+        compound_1 = torch.load(fingerprints_dir + '/' + left_side[0] + '.pt').numpy()
+        compound_2 = torch.load(fingerprints_dir + '/' + left_side[1] + '.pt').numpy()
+        compound_3 = torch.load(fingerprints_dir + '/' + right_side[0] + '.pt').numpy()
+        compound_4 = torch.load(fingerprints_dir + '/' + right_side[1] + '.pt').numpy()
+        
+        fp_1 = np.concatenate((np.array([]), compound_1, compound_2, compound_3, compound_4))
+        fp_2 = np.concatenate((np.array([]), compound_2, compound_1, compound_3, compound_4))
+        fp_3 = np.concatenate((np.array([]), compound_1, compound_2, compound_4, compound_3))
+        fp_4 = np.concatenate((np.array([]), compound_2, compound_1, compound_4, compound_3))
+
+        return [fp_1, fp_2, fp_3, fp_4]
+
+    except:
+        return None
+
+# returns single fingerprint
 def createReactionFingerprint(reaction, reactions_dir, fingerprints_dir, fp_length=8):
     try: 
         reaction_file = open(reactions_dir + "/" + reaction, 'r')
@@ -54,12 +97,17 @@ class ReactionsDataset(Dataset):
         labels = []
         
         for reaction, type in zip(reactions, types):
-            reaction_fp = createReactionFingerprint(reaction, reactions_dir, fingerprints_dir)
+            reaction_fp = createReactionFingerprints(reaction, reactions_dir, fingerprints_dir)
+            #reaction_fp = createCombinedFingerprint(reaction, reactions_dir, fingerprints_dir)
             if (reaction_fp is not None):
-                reaction_fps.append(reaction_fp)
-                labels.append(type)
+                for fp in reaction_fp:    
+                    reaction_fps.append(fp)
+                    labels.append(type)
+
+                """ reaction_fps.append(reaction_fp)
+                labels.append(type) """
                #reaction_fps = torch.cat(reaction_fps, reaction_fp)
-        
+
         # Feature Scaling
         sc = StandardScaler()
         reaction_fps = sc.fit_transform(reaction_fps)
@@ -116,7 +164,7 @@ model = ClassificationNetwork()
 criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.parameters(), lr = learning_rate)
 
-train_losses, test_losses, test_accs = [], [], []
+train_losses, test_losses, test_accs, types_accs = [], [], [], {}
 for e in range(epochs):
     running_loss = 0
     for fps, labels in trainloader:
@@ -131,6 +179,28 @@ for e in range(epochs):
         test_loss = 0
         accuracy = 0
 
+        accuracies_detailed = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+        }
+
+        labels_count = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+        } 
+
         with torch.no_grad():
             model.eval()
             for fps, labels in validloader:
@@ -139,8 +209,22 @@ for e in range(epochs):
                 ps = torch.exp(log_ps)
                 top_p, top_class = ps.topk(1, dim=1)
                 equals = top_class == labels.view(*top_class.shape)
+
+                for label, val in zip(labels, equals):
+                    if (val):
+                        accuracies_detailed[label.item()]+=1
+                    labels_count[label.item()]+=1
+
                 accuracy += torch.mean(equals.type(torch.FloatTensor))
         
+        for label in accuracies_detailed:
+            try:
+                accuracies_detailed[label] = accuracies_detailed[label] / labels_count[label]
+            except: #division by 0
+                continue
+        
+        types_accs = accuracies_detailed
+
         model.train()
 
         train_losses.append(running_loss/len(trainloader))
@@ -152,7 +236,7 @@ for e in range(epochs):
               "Test Loss: {:.3f}.. ".format(test_losses[-1]),
               "Test Accuracy: {:.3f}".format(accuracy/len(validloader)))
 
-fig, axs = plt.subplots(2)
+fig, axs = plt.subplots(3)
 axs[0].plot(train_losses, label='Training loss')
 axs[0].plot(test_losses, label='Validation loss')
 axs[0].legend(frameon = False)
@@ -160,6 +244,11 @@ axs[0].set_title("Loss")
 axs[1].plot(test_accs, label='Validation accuracy')
 axs[1].set_title("Accuracy")
 axs[1].legend(frameon = False)
+
+axs[2].set_title("Accuracy by Type")
+print(list(types_accs.values()))
+axs[2].bar(np.arange(8), list(types_accs.values()))
+axs[2].set_xticklabels(("Hydrolase", "Isomerase", "Ligase", "Lyase", "Oxidoreductase", "Transferase", "Translocase", "Unassigned"))
 
 axs[0].set_ylim([0, 1])
 axs[1].set_ylim([0, 1])

@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from torch.utils.data.sampler import SubsetRandomSampler
 import matplotlib.pyplot as plt
 
-reactions_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/ParsedAll'
+reactions_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/EnzymaticReactions'
 fingerprints_dir = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/fingerprint/generated'
 reactions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/encyme_reaction_classification/data/reactions.csv'
 
@@ -18,6 +18,48 @@ fp_length = 8
 epochs = 100
 batch_size = 16
 learning_rate = 0.001
+
+def createCombinedFingerprint(reaction, reactions_dir, fingerprints_dir, fp_length=8):
+    try: 
+        reaction_file = open(reactions_dir + "/" + reaction, 'r')
+        
+        reaction_split = reaction_file.read().split('-')
+        left_side = reaction_split[0].split(',')
+        right_side = reaction_split[1].split(',')
+
+        fp_combined = torch.load(fingerprints_dir + '/' + right_side[0] + '.pt').numpy()
+        fp_combined += torch.load(fingerprints_dir + '/' + right_side[1] + '.pt').numpy()
+        fp_combined -= torch.load(fingerprints_dir + '/' + left_side[0] + '.pt').numpy()
+        fp_combined -= torch.load(fingerprints_dir + '/' + left_side[1] + '.pt').numpy()
+        
+        return fp_combined
+
+    except:
+        return None
+
+# returns 4 fingerprints - different order of reactants
+def createReactionFingerprints(reaction, reactions_dir, fingerprints_dir, fp_length=8):
+    try: 
+        reaction_file = open(reactions_dir + "/" + reaction, 'r')
+        
+        reaction_split = reaction_file.read().split('-')
+        left_side = reaction_split[0].split(',')
+        right_side = reaction_split[1].split(',')
+
+        compound_1 = torch.load(fingerprints_dir + '/' + left_side[0] + '.pt').numpy()
+        compound_2 = torch.load(fingerprints_dir + '/' + left_side[1] + '.pt').numpy()
+        compound_3 = torch.load(fingerprints_dir + '/' + right_side[0] + '.pt').numpy()
+        compound_4 = torch.load(fingerprints_dir + '/' + right_side[1] + '.pt').numpy()
+        
+        fp_1 = np.concatenate((np.array([]), compound_1, compound_2, compound_3, compound_4))
+        fp_2 = np.concatenate((np.array([]), compound_2, compound_1, compound_3, compound_4))
+        fp_3 = np.concatenate((np.array([]), compound_1, compound_2, compound_4, compound_3))
+        fp_4 = np.concatenate((np.array([]), compound_2, compound_1, compound_4, compound_3))
+
+        return [fp_1, fp_2, fp_3, fp_4]
+
+    except:
+        return None
 
 def createReactionFingerprint(reaction, reactions_dir, fingerprints_dir, fp_length=8):
     try: 
@@ -47,17 +89,40 @@ class ReactionsDataset(Dataset):
     def __init__(self, file_name) -> None:
         file = pd.read_csv(file_name)
         reactions = file['Reaction']
-        isHsa = file['isHsa']
+        hasRBP = file['hasRBP']
+        reactionType = file['reactionType']
 
         reaction_fps = []
         labels = []
+        types = []
+
+        reaction_count = 0
+        count = {
+            0: 0,
+            1:0,
+        }
         
-        for reaction, label in zip(reactions, isHsa):
-            reaction_fp = createReactionFingerprint(reaction, reactions_dir, fingerprints_dir)
+        for reaction, label, reactionType in zip(reactions, hasRBP, reactionType):
+            reaction_fp = createReactionFingerprints(reaction, reactions_dir, fingerprints_dir)
+            #reaction_fp = createCombinedFingerprint(reaction, reactions_dir, fingerprints_dir)
             if (reaction_fp is not None):
-                reaction_fps.append(reaction_fp)
+                for fp in reaction_fp:    
+                    reaction_fps.append(fp)
+                    labels.append(label)
+                    types.append(reactionType)
+                    reaction_count += 1
+                    count[label] += 1
+                """ reaction_fps.append(reaction_fp)
                 labels.append(label)
+                reaction_count += 1
+                count[label] += 1 """
                #reaction_fps = torch.cat(reaction_fps, reaction_fp)
+        
+        for x in count:
+            count[x] = 100 * count[x] / reaction_count
+
+        print(reaction_count)
+        print(count)
         
         # Feature Scaling
         sc = StandardScaler()
@@ -66,15 +131,17 @@ class ReactionsDataset(Dataset):
         # Convert to tensors
         fps_tensor = torch.tensor(reaction_fps, dtype=torch.float32)
         labels_tensor = torch.tensor(labels)
+        types_tensor = torch.tensor(types)
 
         self.X_train = fps_tensor
         self.y_train = labels_tensor
+        self.z_train = types_tensor
 
     def __len__(self):
         return len(self.y_train)
 
     def __getitem__(self, index):
-        return self.X_train[index], self.y_train[index]
+        return self.X_train[index], self.y_train[index], self.z_train[index]
 
 class ClassificationNetwork(nn.Module):
     def __init__(self):
@@ -134,7 +201,7 @@ train_accs, test_accs = [], []
 for e in range(1, epochs+1):
     train_loss = 0
     train_acc = 0
-    for X_batch, y_batch in trainloader:
+    for X_batch, y_batch, _ in trainloader:
         optimizer.zero_grad()
         
         y_pred = model(X_batch)
@@ -151,12 +218,42 @@ for e in range(1, epochs+1):
     else: 
         test_loss = 0
         test_acc = 0
+
+        accuracies_detailed = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+        }
+
+        labels_count = {
+            0: 0,
+            1: 0,
+            2: 0,
+            3: 0,
+            4: 0,
+            5: 0,
+            6: 0,
+            7: 0,
+        } 
+
         with torch.no_grad():
-            for X_batch, y_batch in validloader:
+            for X_batch, y_batch, z_batch in validloader:
                 y_pred = model(X_batch)
+
+                for label in z_batch:
+                    labels_count[label.item()] += 1
+
+                for pred, true in zip(X_batch, y_batch):
+                    print(pred, true)
         
                 loss = criterion(y_pred, y_batch.unsqueeze(1).type_as(y_pred))
                 acc = binary_acc(y_pred, y_batch.unsqueeze(1))
+
                 
                 test_loss += loss.item()
                 test_acc += acc.item()

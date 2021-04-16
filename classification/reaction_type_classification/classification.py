@@ -16,8 +16,8 @@ reactions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/cla
 
 n_types = 8
 fp_length = 8
-epochs = 20
-batch_size = 16
+epochs = 50
+batch_size = 150
 learning_rate = 0.001
 
 def createCombinedFingerprint(reaction, reactions_dir, fingerprints_dir, fp_length=8):
@@ -165,6 +165,7 @@ criterion = nn.NLLLoss()
 optimizer = optim.Adam(model.parameters(), lr = learning_rate)
 
 train_losses, test_losses, test_accs, types_accs = [], [], [], {}
+labels_final_count = {}
 for e in range(epochs):
     running_loss = 0
     for fps, labels in trainloader:
@@ -224,6 +225,7 @@ for e in range(epochs):
                 continue
         
         types_accs = accuracies_detailed
+        labels_final_count = labels_count
 
         model.train()
 
@@ -248,7 +250,17 @@ axs[1].legend(frameon = False)
 axs[2].set_title("Accuracy by Type")
 print(list(types_accs.values()))
 axs[2].bar(np.arange(8), list(types_accs.values()))
-axs[2].set_xticklabels(("Hydrolase", "Isomerase", "Ligase", "Lyase", "Oxidoreductase", "Transferase", "Translocase", "Unassigned"))
+axs[2].set_xticks(np.arange(8))
+axs[2].set_xticklabels((
+    f"Hydrolase\n({labels_final_count[0]})", 
+    f"Isomerase\n({labels_final_count[1]})", 
+    f"Ligase\n({labels_final_count[2]})", 
+    f"Lyase\n({labels_final_count[3]})", 
+    f"Oxidoreductase\n({labels_final_count[4]})", 
+    f"Transferase\n({labels_final_count[5]})", 
+    f"Translocase\n({labels_final_count[6]})", 
+    f"Unassigned\n({labels_final_count[7]})"
+))
 
 axs[0].set_ylim([0, 1])
 axs[1].set_ylim([0, 1])

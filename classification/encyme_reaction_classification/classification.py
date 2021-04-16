@@ -15,8 +15,8 @@ reactions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/cla
 
 fp_length = 8
 
-epochs = 100
-batch_size = 16
+epochs = 20
+batch_size = 150
 learning_rate = 0.001
 
 def createCombinedFingerprint(reaction, reactions_dir, fingerprints_dir, fp_length=8):
@@ -196,7 +196,8 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 model.train()
 
-train_accs, test_accs = [], []
+train_accs, test_accs, types_accs = [], [], {}
+labels_final_count = {}
 
 for e in range(1, epochs+1):
     train_loss = 0
@@ -242,30 +243,58 @@ for e in range(1, epochs+1):
         } 
 
         with torch.no_grad():
+            model.eval()
             for X_batch, y_batch, z_batch in validloader:
                 y_pred = model(X_batch)
 
-                for label in z_batch:
+                for pred, true, label in zip(torch.round(torch.sigmoid(y_pred)), y_batch, z_batch):
                     labels_count[label.item()] += 1
-
-                for pred, true in zip(X_batch, y_batch):
-                    print(pred, true)
+                    if (pred.item() == true.item()):
+                        accuracies_detailed[label.item()] += 1
         
                 loss = criterion(y_pred, y_batch.unsqueeze(1).type_as(y_pred))
                 acc = binary_acc(y_pred, y_batch.unsqueeze(1))
-
                 
                 test_loss += loss.item()
                 test_acc += acc.item()
         
+        for label in accuracies_detailed:
+            try:
+                accuracies_detailed[label] = accuracies_detailed[label] / labels_count[label]
+            except: #division by 0
+                continue
+        
+        types_accs = accuracies_detailed
+        labels_final_count = labels_count
+
+        model.train()
+
         train_accs.append(train_acc/len(trainloader))
         test_accs.append(test_acc/len(validloader))
 
     print(f'Epoch {e+0:03}: | Train Loss: {train_loss/len(trainloader):.5f} | Train Acc: {train_acc/len(trainloader):.3f}| Test Loss: {test_loss/len(validloader):.5f} | Test Acc: {test_acc/len(validloader):.3f}')
 
 # Plot accuracies
-plt.plot(train_accs, label='Training accuracy')
-plt.plot(test_accs, label='Validation accuracy')
-plt.legend(frameon=False)
-plt.ylim([0, 100])
+fig, axs = plt.subplots(2)
+axs[0].plot(train_accs, label='Training accuracy')
+axs[0].plot(test_accs, label='Validation accuracy')
+axs[0].legend(frameon=False)
+axs[0].set_title("RBP detection")
+axs[0].set_ylim([0, 100])
+
+axs[1].set_title("Accuracy by Type")
+print(list(types_accs.values()))
+axs[1].bar(np.arange(8), list(types_accs.values()))
+axs[1].set_xticks(np.arange(8))
+axs[1].set_xticklabels((
+    f"Hydrolase\n({labels_final_count[0]})", 
+    f"Isomerase\n({labels_final_count[1]})", 
+    f"Ligase\n({labels_final_count[2]})", 
+    f"Lyase\n({labels_final_count[3]})", 
+    f"Oxidoreductase\n({labels_final_count[4]})", 
+    f"Transferase\n({labels_final_count[5]})", 
+    f"Translocase\n({labels_final_count[6]})", 
+    f"Unassigned\n({labels_final_count[7]})"
+))
+
 plt.show()

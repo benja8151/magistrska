@@ -4,3 +4,9 @@ data/csv
 data/mols
 
 fingerprint/generated
+fingerprint/fingerprint_generator_new/generated
+processing/__pycache__/data_loader.cpython-38.pyc
+
+dgl/data/graphs
+dgl/data/graphs_homogenous
+dgl/data/dataset

@@ -22,10 +22,10 @@ from torch import nn
 from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn.functional as F
 
-
+torch.cuda.empty_cache()
 
 batch_size = 20
-device = 'cpu'
+device = 'cuda:0'
 
 # Dataset
 class ReactionsDataset(DGLDataset):
@@ -131,7 +131,7 @@ class BondEncoder(torch.nn.Module):
         
         self.bond_embedding_list = torch.nn.ModuleList()
 
-        full_bond_feature_dims = [7]
+        full_bond_feature_dims = [10]
 
         for i, dim in enumerate(full_bond_feature_dims):
             emb = torch.nn.Embedding(dim, emb_dim)

@@ -7,6 +7,25 @@ import sys
 import pickle
 import os
 
+def filterReactionsConnections(csvPath: str, connections: np.ndarray, node_indexes):
+    #original_length = len(connections)
+    compounds = {}
+    filteredConnections = []
+    for pair in connections:
+        cmp1 = node_indexes[pair[0]]['cmp']
+        if (cmp1 not in compounds):
+            compounds[cmp1] = pd.read_csv(csvPath + '/' + cmp1 + '/nodes.csv')
+        cmp2 = node_indexes[pair[1]]['cmp']
+        if (cmp2 not in compounds):
+            compounds[cmp2] = pd.read_csv(csvPath + '/' + cmp2 + '/nodes.csv')
+        if (compounds[cmp1]['atomic_number'][node_indexes[pair[0]]['ind']] == compounds[cmp2]['atomic_number'][node_indexes[pair[1]]['ind']]):
+            filteredConnections.append(pair)
+
+    #new_length = len(filteredConnections)
+    #print("Reduced reactions connections by: ", round(((original_length-new_length)/original_length * 100), 2), "%")
+
+    return np.array(filteredConnections).astype(connections.dtype)
+
 def reactionToGraph(reactionsPath: str, reactionName: str, csvPath: str):
     try:
         reactionFile = open(reactionsPath + '/' + reactionName)
@@ -25,6 +44,7 @@ def reactionToGraph(reactionsPath: str, reactionName: str, csvPath: str):
 
         leftSideNodes = []
         rightSideNodes = []
+        node_indexes = {}
 
         # Reactants
         for compound in leftSide:
@@ -41,6 +61,9 @@ def reactionToGraph(reactionsPath: str, reactionName: str, csvPath: str):
             graphData['intra'] = (np.append(graphData['intra'][0], u), np.append(graphData['intra'][1], v)) 
 
             leftSideNodes.append(np.arange(nodeCount, nodeCount + len(nodes), dtype=int))
+
+            for i in range(nodeCount, nodeCount + len(nodes)):
+                node_indexes[i] = {"ind": i-nodeCount, "cmp": compound}
 
             nodeCount += len(nodes)
 
@@ -59,6 +82,9 @@ def reactionToGraph(reactionsPath: str, reactionName: str, csvPath: str):
             graphData['intra'] = (np.append(graphData['intra'][0], u), np.append(graphData['intra'][1], v)) 
 
             rightSideNodes.append(np.arange(nodeCount, nodeCount + len(nodes), dtype=int))
+
+            for i in range(nodeCount, nodeCount + len(nodes)):
+                node_indexes[i] = {"ind": i-nodeCount, "cmp": compound}
 
             nodeCount += len(nodes)
 
@@ -94,6 +120,8 @@ def reactionToGraph(reactionsPath: str, reactionName: str, csvPath: str):
 
         # Reaction connections
         connections = np.array(np.meshgrid(np.concatenate(leftSideNodes), np.concatenate(rightSideNodes))).T.reshape(-1,2)
+        # Filter only connections of same atoms
+        connections = filterReactionsConnections(csvPath, connections, node_indexes)
         graphData['reacts'] = (
             np.concatenate([connections[:,0], connections[:,1]],), 
             np.concatenate([connections[:,1], connections[:,0]]),

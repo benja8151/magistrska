@@ -414,8 +414,8 @@ def collate_dgl(samples):
 
 dataset = ReactionsDataset(
     '',
-    '/home/bsmrdelj/local/dgl/data/dataset',
-    '/home/bsmrdelj/local/dgl/data/reactions_all.csv',
+    '/home/bsmrdelj/local/git/magistrska/data/dataset',
+    '/home/bsmrdelj/local/git/magistrska/data/reactions_all.csv',
     force_reload=False
 )
 

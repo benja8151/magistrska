@@ -204,7 +204,7 @@ def createGraphs(reactionsDir: str, outputDir: str, csvPath: str):
 
 createGraphs(
     '/home/bsmrdelj/local/git/magistrska/data/reactions/EnzymaticReactions',
-    '/home/bsmrdelj/local/git/magistrska/data/graphs_homogenous',
+    '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_homogenous',
     '/home/bsmrdelj/local/git/magistrska/data/csv/csvAll',
 )
 

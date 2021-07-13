@@ -413,9 +413,9 @@ def collate_dgl(samples):
 #########################################################################
 
 dataset = ReactionsDataset(
-    '',
-    '/home/bsmrdelj/local/git/magistrska/data/dataset',
-    '/home/bsmrdelj/local/git/magistrska/data/reactions_all.csv',
+    '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_homogenous',
+    '/home/bsmrdelj/local/git/magistrska/dgl/data/dataset_RBP',
+    '/home/bsmrdelj/local/git/magistrska/classification/encyme_reaction_classification/data/reactions_all.csv',
     force_reload=False
 )
 

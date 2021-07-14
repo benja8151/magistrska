@@ -373,7 +373,9 @@ def train(model, device, data_loader, opt, loss_fn):
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
 
         loss = loss_fn(log_ps, labels)
-        print(loss)
+        print(g)
+        print(log_ps)
+        print(labels)
         train_loss.append(loss.item())
         
         opt.zero_grad()

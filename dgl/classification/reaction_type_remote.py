@@ -24,7 +24,7 @@ import torch.nn.functional as F
 
 torch.cuda.empty_cache()
 
-batch_size = 20
+batch_size = 15
 device = 'cuda:0'
 
 # Dataset
@@ -368,10 +368,9 @@ def train(model, device, data_loader, opt, loss_fn):
     train_loss = []
     for g, labels in data_loader:
         g = g.to(device)
-        labels = labels.to(torch.float32).to(device)
+        labels = labels.to(device)
 
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
-
 
         loss = loss_fn(log_ps, labels)
         #print(loss)

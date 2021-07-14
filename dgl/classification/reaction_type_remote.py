@@ -24,7 +24,7 @@ import torch.nn.functional as F
 
 torch.cuda.empty_cache()
 
-batch_size = 15
+batch_size = 10
 device = 'cuda:0'
 
 # Dataset
@@ -373,7 +373,7 @@ def train(model, device, data_loader, opt, loss_fn):
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
 
         loss = loss_fn(log_ps, labels)
-        #print(loss)
+        print(loss)
         train_loss.append(loss.item())
         
         opt.zero_grad()
@@ -403,7 +403,7 @@ def test(model, device, data_loader):
     #y_pred = torch.cat(y_pred, dim=0).numpy()
 
     #fpr, tpr, _ = roc_curve(y_true, y_pred)
-    return accuracy
+    return accuracy/len(data_loader)
 
 # Collate function for ordinary graph classification 
 def collate_dgl(samples):

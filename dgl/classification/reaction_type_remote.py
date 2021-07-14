@@ -375,6 +375,7 @@ def train(model, device, data_loader, opt, loss_fn):
         loss = loss_fn(log_ps, labels)
         print(g)
         print(log_ps)
+        print(loss)
         print(labels)
         train_loss.append(loss.item())
         

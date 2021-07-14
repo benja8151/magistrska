@@ -394,7 +394,7 @@ def test(model, device, data_loader):
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
         ps = torch.exp(log_ps)
         top_p, top_class = ps.topk(1, dim=1)
-        equals = top_class == labels.view(*top_class.shape)
+        equals = top_class == labels.to(device).view(*top_class.shape)
         #y_true.append(labels.detach().cpu())
         #y_pred.append(logits.detach().cpu())
         accuracy += torch.mean(equals.type(torch.FloatTensor))

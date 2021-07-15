@@ -389,10 +389,8 @@ def test(model, device, data_loader, calculate_auc):
     actual_labels, predicted_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)], [[] for i in range(n_types)]
 
     accuracy = 0
-    
-    print("Test...") 
 
-    if (calculate_auc):
+    if (not calculate_auc):
         for g, labels in data_loader:
             g = g.to(device)
             log_ps = model(g, g.edata['feat'], g.ndata['feat'])

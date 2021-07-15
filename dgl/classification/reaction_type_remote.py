@@ -131,7 +131,7 @@ class BondEncoder(torch.nn.Module):
         
         self.bond_embedding_list = torch.nn.ModuleList()
 
-        full_bond_feature_dims = [8]
+        full_bond_feature_dims = [9]
 
         for i, dim in enumerate(full_bond_feature_dims):
             emb = torch.nn.Embedding(dim, emb_dim)
@@ -373,10 +373,6 @@ def train(model, device, data_loader, opt, loss_fn):
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
 
         loss = loss_fn(log_ps, labels)
-        print(g)
-        print(log_ps)
-        print(loss)
-        print(labels)
         train_loss.append(loss.item())
         
         opt.zero_grad()

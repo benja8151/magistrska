@@ -389,6 +389,8 @@ def test(model, device, data_loader):
     actual_labels, predicted_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)], [[] for i in range(n_types)]
 
     accuracy = 0
+    
+    print("Test...") 
 
     for i in range(n_types):
         for g, labels in data_loader:
@@ -407,11 +409,10 @@ def test(model, device, data_loader):
         # only run once
         if i == 0:
             accuracy += torch.mean(equals.type(torch.FloatTensor))
-    
-    print("Test...")    
-    print(actual_labels)
-    print(predicted_labels)
-    print(predicted_probabilities)
+
+    for i in range(n_types):
+        fpr, tpr, _  = roc_curve(actual_labels[i], predicted_probabilities[i])
+        print(i, auc(fpr, tpr))
 
     #y_true = torch.cat(y_true, dim=0).numpy()
     #y_pred = torch.cat(y_pred, dim=0).numpy()

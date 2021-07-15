@@ -394,19 +394,19 @@ def test(model, device, data_loader):
     for g, labels in data_loader:
         g = g.to(device)
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
-        print("Test...")
         ps = torch.exp(log_ps)
         top_p, top_class = ps.topk(1, dim=1)
         equals = top_class == labels.to(device).view(*top_class.shape)
         #y_true.append(labels.detach().cpu())
         #y_pred.append(logits.detach().cpu())
-        for label, prediction, probabilities in zip(labels, top_class, ps):
+        for label, prediction, probabilities in zip(labels.detach().cpu(), top_class, ps):
             actual_labels[i].append(1 if label.item() == i else 0)
             predicted_labels[i].append(1 if prediction.item() == i else 0)
             predicted_probabilities[i].append(probabilities[i].item)
 
         accuracy += torch.mean(equals.type(torch.FloatTensor))
     
+    print("Test...")    
     print(actual_labels)
     print(predicted_labels)
     print(predicted_probabilities)

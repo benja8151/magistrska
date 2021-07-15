@@ -24,7 +24,7 @@ import torch.nn.functional as F
 
 torch.cuda.empty_cache()
 
-batch_size = 10
+batch_size = 200
 device = 'cuda:0'
 
 # Dataset
@@ -367,15 +367,16 @@ def train(model, device, data_loader, opt, loss_fn):
     
     train_loss = []
     for g, labels in data_loader:
+        opt.zero_grad()
         g = g.to(device)
-        labels = labels.to(device)
+        labels = labels.to(device).flatten()
 
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
 
         loss = loss_fn(log_ps, labels)
         train_loss.append(loss.item())
-        
-        opt.zero_grad()
+                
+        #opt.zero_grad()
         loss.backward()
         opt.step()
 
@@ -417,10 +418,10 @@ def collate_dgl(samples):
 #########################################################################
 
 dataset = ReactionsDataset(
-    '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_homogenous',
+    '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_with_master_node',
     '/home/bsmrdelj/local/git/magistrska/dgl/data/dataset_reaction_type',
     '/home/bsmrdelj/local/git/magistrska/classification/reaction_type_classification/data/reactions_all.csv',
-    force_reload=False
+    force_reload=True
 )
 
 num_reactions = len(dataset)
@@ -468,7 +469,7 @@ model = DeeperGCN(
 print(model)
 
 opt = torch.optim.Adam(model.parameters(), lr=0.01)
-loss_fn = nn.NLLLoss()
+loss_fn = nn.CrossEntropyLoss()
 
  # training & validation & testing
 best_acc = 0

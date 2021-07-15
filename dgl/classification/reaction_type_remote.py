@@ -24,6 +24,7 @@ import torch.nn.functional as F
 
 torch.cuda.empty_cache()
 
+n_types = 8
 batch_size = 200
 device = 'cuda:0'
 
@@ -367,16 +368,16 @@ def train(model, device, data_loader, opt, loss_fn):
     
     train_loss = []
     for g, labels in data_loader:
-        opt.zero_grad()
         g = g.to(device)
-        labels = labels.to(device).flatten()
+        labels = labels.to(device)
 
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
+        print(log_ps)
 
         loss = loss_fn(log_ps, labels)
         train_loss.append(loss.item())
-                
-        #opt.zero_grad()
+        
+        opt.zero_grad()
         loss.backward()
         opt.step()
 
@@ -387,13 +388,19 @@ def test(model, device, data_loader):
     model.eval()
     y_true, y_pred = [], []
 
+    actual_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)]
+
     accuracy = 0
 
     for g, labels in data_loader:
         g = g.to(device)
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
+        print("Test...")
+        print(log_ps)
         ps = torch.exp(log_ps)
+        print(ps)
         top_p, top_class = ps.topk(1, dim=1)
+        print(top_class)
         equals = top_class == labels.to(device).view(*top_class.shape)
         #y_true.append(labels.detach().cpu())
         #y_pred.append(logits.detach().cpu())
@@ -418,10 +425,10 @@ def collate_dgl(samples):
 #########################################################################
 
 dataset = ReactionsDataset(
-    '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_with_master_node',
+    '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_homogenous',
     '/home/bsmrdelj/local/git/magistrska/dgl/data/dataset_reaction_type',
     '/home/bsmrdelj/local/git/magistrska/classification/reaction_type_classification/data/reactions_all.csv',
-    force_reload=True
+    force_reload=False
 )
 
 num_reactions = len(dataset)
@@ -447,7 +454,7 @@ test_dataloader = GraphDataLoader(
 
 node_feat_dim = dataset[0][0].ndata['feat'].size()[-1]
 edge_feat_dim = dataset[0][0].edata['feat'].size()[-1]
-out_dim = 8
+out_dim = n_types
 epochs = 1000
 
 #g = dataset[0][0]

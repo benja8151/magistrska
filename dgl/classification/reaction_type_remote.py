@@ -385,26 +385,28 @@ def train(model, device, data_loader, opt, loss_fn):
 @torch.no_grad()
 def test(model, device, data_loader):
     model.eval()
-    y_true, y_pred = [], []
 
     actual_labels, predicted_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)], [[] for i in range(n_types)]
 
     accuracy = 0
 
-    for g, labels in data_loader:
-        g = g.to(device)
-        log_ps = model(g, g.edata['feat'], g.ndata['feat'])
-        ps = torch.exp(log_ps)
-        top_p, top_class = ps.topk(1, dim=1)
-        equals = top_class == labels.to(device).view(*top_class.shape)
-        #y_true.append(labels.detach().cpu())
-        #y_pred.append(logits.detach().cpu())
-        for label, prediction, probabilities in zip(labels.detach().cpu(), top_class, ps):
-            actual_labels[i].append(1 if label.item() == i else 0)
-            predicted_labels[i].append(1 if prediction.item() == i else 0)
-            predicted_probabilities[i].append(probabilities[i].item)
-
-        accuracy += torch.mean(equals.type(torch.FloatTensor))
+    for i in range(n_types):
+        for g, labels in data_loader:
+            g = g.to(device)
+            log_ps = model(g, g.edata['feat'], g.ndata['feat'])
+            ps = torch.exp(log_ps)
+            _, top_class = ps.topk(1, dim=1)
+            equals = top_class == labels.to(device).view(*top_class.shape)
+            
+            #OneVsRest
+            for label, prediction, probabilities in zip(labels.detach().cpu(), top_class, ps):
+                actual_labels[i].append(1 if label.item() == i else 0)
+                predicted_labels[i].append(1 if prediction.item() == i else 0)
+                predicted_probabilities[i].append(probabilities[i].item())
+        
+        # only run once
+        if i == 0:
+            accuracy += torch.mean(equals.type(torch.FloatTensor))
     
     print("Test...")    
     print(actual_labels)

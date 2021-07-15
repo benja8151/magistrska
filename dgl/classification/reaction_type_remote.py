@@ -383,7 +383,7 @@ def train(model, device, data_loader, opt, loss_fn):
     return sum(train_loss) / len(train_loss)
 
 @torch.no_grad()
-def test(model, device, data_loader):
+def test(model, device, data_loader, calculate_auc):
     model.eval()
 
     actual_labels, predicted_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)], [[] for i in range(n_types)]
@@ -392,32 +392,36 @@ def test(model, device, data_loader):
     
     print("Test...") 
 
-    for i in range(n_types):
+    if (calculate_auc):
         for g, labels in data_loader:
             g = g.to(device)
             log_ps = model(g, g.edata['feat'], g.ndata['feat'])
             ps = torch.exp(log_ps)
             _, top_class = ps.topk(1, dim=1)
             equals = top_class == labels.to(device).view(*top_class.shape)
-            
-            #OneVsRest
-            for label, prediction, probabilities in zip(labels.detach().cpu(), top_class, ps):
-                actual_labels[i].append(1 if label.item() == i else 0)
-                predicted_labels[i].append(1 if prediction.item() == i else 0)
-                predicted_probabilities[i].append(probabilities[i].item())
-        
-        # only run once
-        if i == 0:
             accuracy += torch.mean(equals.type(torch.FloatTensor))
+    else:
+        #OneVsRest
+        for i in range(n_types):
+            for g, labels in data_loader:
+                g = g.to(device)
+                log_ps = model(g, g.edata['feat'], g.ndata['feat'])
+                ps = torch.exp(log_ps)
+                _, top_class = ps.topk(1, dim=1)
+                equals = top_class == labels.to(device).view(*top_class.shape)
+                
+                for label, prediction, probabilities in zip(labels.detach().cpu(), top_class, ps):
+                    actual_labels[i].append(1 if label.item() == i else 0)
+                    predicted_labels[i].append(1 if prediction.item() == i else 0)
+                    predicted_probabilities[i].append(probabilities[i].item())
+            # only run once
+            if i == 0:
+                accuracy += torch.mean(equals.type(torch.FloatTensor))
 
-    for i in range(n_types):
-        fpr, tpr, _  = roc_curve(actual_labels[i], predicted_probabilities[i])
-        print(i, auc(fpr, tpr))
+        for i in range(n_types):
+            fpr, tpr, _  = roc_curve(actual_labels[i], predicted_probabilities[i])
+            print("Type:", i, "Auc: ", auc(fpr, tpr))
 
-    #y_true = torch.cat(y_true, dim=0).numpy()
-    #y_pred = torch.cat(y_pred, dim=0).numpy()
-
-    #fpr, tpr, _ = roc_curve(y_true, y_pred)
     return accuracy/len(data_loader)
 
 # Collate function for ordinary graph classification 
@@ -500,8 +504,8 @@ for i in range(1000):
     if i >= 5:
         times.append(t2 - t1)
 
-    train_acc = test(model, device, train_dataloader)
-    valid_acc = test(model, device, test_dataloader,)
+    train_acc = test(model, device, train_dataloader, False)
+    valid_acc = test(model, device, test_dataloader, (i % 10 == 0)) # Calculate AUC every 10th epoch
 
     print(f'Epoch {i} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | Valid Acc: {valid_acc:.4f}')
 

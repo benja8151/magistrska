@@ -372,7 +372,6 @@ def train(model, device, data_loader, opt, loss_fn):
         labels = labels.to(device)
 
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
-        print(log_ps)
 
         loss = loss_fn(log_ps, labels)
         train_loss.append(loss.item())
@@ -388,7 +387,7 @@ def test(model, device, data_loader):
     model.eval()
     y_true, y_pred = [], []
 
-    actual_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)]
+    actual_labels, predicted_labels, predicted_probabilities = [[] for i in range(n_types)], [[] for i in range(n_types)], [[] for i in range(n_types)]
 
     accuracy = 0
 
@@ -396,15 +395,21 @@ def test(model, device, data_loader):
         g = g.to(device)
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
         print("Test...")
-        print(log_ps)
         ps = torch.exp(log_ps)
-        print(ps)
         top_p, top_class = ps.topk(1, dim=1)
-        print(top_class)
         equals = top_class == labels.to(device).view(*top_class.shape)
         #y_true.append(labels.detach().cpu())
         #y_pred.append(logits.detach().cpu())
+        for label, prediction, probabilities in zip(labels, top_class, ps):
+            actual_labels[i].append(1 if label.item() == i else 0)
+            predicted_labels[i].append(1 if prediction.item() == i else 0)
+            predicted_probabilities[i].append(probabilities[i].item)
+
         accuracy += torch.mean(equals.type(torch.FloatTensor))
+    
+    print(actual_labels)
+    print(predicted_labels)
+    print(predicted_probabilities)
 
     #y_true = torch.cat(y_true, dim=0).numpy()
     #y_pred = torch.cat(y_pred, dim=0).numpy()

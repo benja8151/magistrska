@@ -1,7 +1,3 @@
-################################
-# USED FOR RUNNING ON REMOTE GPU
-################################
-
 import dgl
 import dgl.function as dglfn
 from dgl.data import DGLDataset
@@ -23,6 +19,10 @@ import torch
 from torch import nn
 from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn.functional as F
+
+from rdkit import Chem
+from rdkit.Chem.Draw import rdMolDraw2D
+import colorsys
 
 n_types = 8
 batch_size = 1
@@ -455,125 +455,267 @@ def collate_dgl(samples):
     7: Unassigned
 """
 
-# Load Reaction graph
-testGraph = None
-with open('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/data/graphs_with_master_node/R07308', 'rb') as file:
-    testGraph = pickle.load(file)
-file.close()
-print(testGraph)
+# Maps from rdkit atom indexes to DGL graph indexes  
+# Currently only for graphs with master nodes  
+def createAtomMappings(reactionsDir: str, reactionName: str, csvDir: str):
+    reactionFile = open(reactionsDir + '/' + reactionName)
+    reactionSides = reactionFile.read().split('-')
+    reactionFile.close()
+    leftSide = reactionSides[0].split(',')
+    rightSide = reactionSides[1].split(',')
 
-node_feat_dim = testGraph.ndata['feat'].size()[-1]
-edge_feat_dim = testGraph.edata['feat'].size()[-1]
-out_dim = n_types
+    atomIndex = 0
+    atomMapping = {}
 
-# Load model
-model = DeeperGCN(
-    node_feat_dim=node_feat_dim,
-    edge_feat_dim=edge_feat_dim,
-    hid_dim=256,
-    out_dim=out_dim,
-    num_layers=7,
-    dropout=0.2,
-    learn_beta=True
-).to(device)
-model.load_state_dict(torch.load('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/model/tmpmodel.pt', map_location=torch.device('cpu')))
-model.eval()
+    for compound in leftSide:
+        nodes = pd.read_csv(csvDir + '/' + compound + '/nodes.csv')
+        atomMapping[compound] = list(range(atomIndex, len(nodes)+atomIndex))
+        atomIndex += len(nodes)+1
 
-# Remove specific nodes and edges
-#testGraph = dgl.remove_nodes(testGraph, [11, 15])
+    for compound in rightSide:
+        nodes = pd.read_csv(csvDir + '/' + compound + '/nodes.csv')
+        atomMapping[compound] = list(range(atomIndex, len(nodes)+atomIndex))
+        atomIndex += len(nodes)+1
 
-# Test model
-ps = model(testGraph, testGraph.edata['feat'], testGraph.ndata['feat'])
-print(torch.exp(ps))
-print(torch.exp(ps).topk(1, dim=1))
+    for compound in leftSide + rightSide:
+        atomMapping[compound] = atomMapping[compound] + [atomIndex]
+        atomIndex+=1
 
-# Node significance
-original_prob = 5319.6997
-removed_probs = [3941.7529, 1728.9265, 7637.9722, 5430.9053, 5903.3496, 9545.0254, 5201.6157, 0.87585, 23178.2598, 10186.2119, 10186.2119, 3232.8752, 5319.6997, 5319.6997, 5319.6997, 5319.6997] 
-removed_deltas = [((original_prob -  x) / original_prob) for x in removed_probs]
-print(removed_deltas)
+    return atomMapping
 
-# Networkx visualization
-nxG = nx.Graph(dgl.to_networkx(testGraph))
-nx.draw(nxG, with_labels=True, cmap=plt.cm.Blues)#, node_color=removed_deltas)
-plt.show()
+# Runs evaluation on graph and returns class probability
+def testModelOnGraph(model, testGraph, reactionType):
+    ps = model(testGraph, testGraph.edata['feat'], testGraph.ndata['feat'])
+    return torch.exp(ps)[reactionType]
 
-# Rdkit visualization
-from rdkit import Chem
-from rdkit.Chem.Draw import rdMolDraw2D
-import colorsys
-
-def getColorFromDelta(delta, deltas):
+# Returns atom color
+def getColorFromDelta(delta, minDelta, maxDelta):
     if (delta < 0):
-        min_delta = min(deltas)
         hue=0
         saturation = 1
-        brightness = delta/min_delta
+        brightness = delta/minDelta
     else:
-        max_delta = max(deltas)
         hue=0.43
         saturation = 1
-        brightness = delta/max_delta
+        brightness = delta/maxDelta
 
     a=0
     b=1
     c=1
     d=0.5
-    print("######")
-    print("Delta: ", delta)
-    print("Original brightness: ", brightness)
     brightness = c + (((d-c)/(b-a)) * (brightness-a))
+
+    return colorsys.hls_to_rgb(hue, brightness, saturation)
+
+# Perfoms a series of model evaluations by removing single atoms
+def evaluateModel(
+    modelPath: str, 
+    graphsDir: str, 
+    reactionName: str, 
+    reactionType: int,
+    reactionsDir: str, 
+    csvDir: str,
+    molDir: str,
+    outputDir: str
+):
     
-    print("Fixed brightness: ", brightness)
+    # Load Reaction graph
+    testGraph = None
+    with open(graphsDir + '/' + reactionName, 'rb') as file:
+        testGraph = pickle.load(file)
+    file.close()
+    print(testGraph)
 
-    return colorsys.hls_to_rgb(hue, brightness, saturation)    
+    node_feat_dim = testGraph.ndata['feat'].size()[-1]
+    edge_feat_dim = testGraph.edata['feat'].size()[-1]
+    out_dim = n_types
 
-def getAtomColors(mapping):
-    colors = {}
-    for idx in range(len(mapping)):
-        colors[idx] = getColorFromDelta(removed_deltas[mapping[idx]], removed_deltas)
-    return colors
+    # Load model
+    model = DeeperGCN(
+        node_feat_dim=node_feat_dim,
+        edge_feat_dim=edge_feat_dim,
+        hid_dim=256,
+        out_dim=out_dim,
+        num_layers=7,
+        dropout=0.2,
+        learn_beta=True
+    ).to(device)
+    model.load_state_dict(torch.load(modelPath, map_location=torch.device('cpu')))
+    model.eval()
 
-mol1 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C01010.mol')
-mol1AtomMapping = [0, 1, 2, 3, 4, 5, 6] #Maps from rdkit atom indexes to removed_deltas
-d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-rdMolDraw2D.PrepareAndDrawMolecule(
-    d, 
-    mol1, 
-    highlightAtoms=list(range(mol1.GetNumAtoms())), 
-    highlightAtomColors=getAtomColors(mol1AtomMapping)
+    # Atom mappings
+    atomMappings = createAtomMappings(reactionsDir, reactionName, csvDir)
+
+    # Calculate original graph evaluation
+    originalProb = testModelOnGraph(model, testGraph, reactionType)
+
+    # Evaluate classification when single atom is removed
+    removedDeltas = {}
+    maxDelta = 0
+    minDelta = 0
+    for compound, mapping in atomMappings:
+        removedProbs = []
+
+        # Compounds with 1 atom and 1 master node
+        if len(mapping) == 2:
+            removedProbs.append(modifiedGraph = dgl.remove_nodes(testGraph, mapping))
+        # Larger compounds
+        else:
+            for i in range(len(mapping) - 1):
+                modifiedGraph = dgl.remove_nodes(testGraph, mapping[i])
+
+                removedProbs.append(testModelOnGraph(model, modifiedGraph, reactionType))
+
+        removedDeltas[compound] = [((originalProb -  x) / originalProb) for x in removedProbs]
+        maxDelta = max(maxDelta, max(removedDeltas[compound]))
+        minDelta = min(minDelta, min(removedDeltas[compound]))
+
+    # Visualization
+    for compound, deltas in removedDeltas:
+        
+        # Load .mol file
+        mol = Chem.MolFromMolFile(molDir + '/' + compound + '.mol')
+        
+        # Get atom colors
+        colors = [getColorFromDelta(delta, minDelta, maxDelta) for delta in deltas]
+        
+        # Draw molecules
+        d = rdMolDraw2D.MolDraw2DCairo(300, 300)
+        rdMolDraw2D.PrepareAndDrawMolecule(
+            d, 
+            mol1, 
+            highlightAtoms=list(range(mol1.GetNumAtoms())), 
+            highlightAtomColors=colors
+        )
+        if not os.path.exists(outputDir + '/' + reactionName):
+            os.makedirs(outputDir + '/' + reactionName)
+        d.WriteDrawingText(outputDir + '/' + reactionName + '/' + compound + '.png')
+
+if (False):
+    # Load Reaction graph
+    testGraph = None
+    with open('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/data/graphs_with_master_node/R07308', 'rb') as file:
+        testGraph = pickle.load(file)
+    file.close()
+    print(testGraph)
+
+    node_feat_dim = testGraph.ndata['feat'].size()[-1]
+    edge_feat_dim = testGraph.edata['feat'].size()[-1]
+    out_dim = n_types
+
+    # Load model
+    model = DeeperGCN(
+        node_feat_dim=node_feat_dim,
+        edge_feat_dim=edge_feat_dim,
+        hid_dim=256,
+        out_dim=out_dim,
+        num_layers=7,
+        dropout=0.2,
+        learn_beta=True
+    ).to(device)
+    model.load_state_dict(torch.load('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/model/tmpmodel.pt', map_location=torch.device('cpu')))
+    model.eval()
+
+    # Remove specific nodes and edges
+    #testGraph = dgl.remove_nodes(testGraph, [11, 15])
+
+    # Test model
+    ps = model(testGraph, testGraph.edata['feat'], testGraph.ndata['feat'])
+    print(torch.exp(ps))
+    print(torch.exp(ps).topk(1, dim=1))
+
+    # Node significance
+    original_prob = 5319.6997
+    removed_probs = [3941.7529, 1728.9265, 7637.9722, 5430.9053, 5903.3496, 9545.0254, 5201.6157, 0.87585, 23178.2598, 10186.2119, 10186.2119, 3232.8752, 5319.6997, 5319.6997, 5319.6997, 5319.6997] 
+    removed_deltas = [((original_prob -  x) / original_prob) for x in removed_probs]
+    print(removed_deltas)
+
+    # Networkx visualization
+    nxG = nx.Graph(dgl.to_networkx(testGraph))
+    nx.draw(nxG, with_labels=True, cmap=plt.cm.Blues)#, node_color=removed_deltas)
+    plt.show()
+
+    # Rdkit visualization
+    from rdkit import Chem
+    from rdkit.Chem.Draw import rdMolDraw2D
+    import colorsys
+
+    def getColorFromDelta(delta, minDelta, maxDelta):
+        if (delta < 0):
+            hue=0
+            saturation = 1
+            brightness = delta/minDelta
+        else:
+            hue=0.43
+            saturation = 1
+            brightness = delta/maxDelta
+
+        a=0
+        b=1
+        c=1
+        d=0.5
+        brightness = c + (((d-c)/(b-a)) * (brightness-a))
+
+        return colorsys.hls_to_rgb(hue, brightness, saturation)    
+
+    def getAtomColors(mapping):
+        colors = {}
+        for idx in range(len(mapping)):
+            colors[idx] = getColorFromDelta(removed_deltas[mapping[idx]], removed_deltas)
+        return colors
+
+    mol1 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C01010.mol')
+    mol1AtomMapping = [0, 1, 2, 3, 4, 5, 6] #Maps from rdkit atom indexes to removed_deltas
+    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
+    rdMolDraw2D.PrepareAndDrawMolecule(
+        d, 
+        mol1, 
+        highlightAtoms=list(range(mol1.GetNumAtoms())), 
+        highlightAtomColors=getAtomColors(mol1AtomMapping)
+    )
+    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp1.png')
+
+    mol2 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00001.mol')
+    mol2AtomMapping = [7]
+    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
+    rdMolDraw2D.PrepareAndDrawMolecule(
+        d, 
+        mol2, 
+        highlightAtoms=list(range(mol2.GetNumAtoms())), 
+        highlightAtomColors=getAtomColors(mol2AtomMapping)
+    )
+    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp2.png')
+
+    mol3 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00011.mol')
+    mol3AtomMapping = [8,9,10]
+    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
+    rdMolDraw2D.PrepareAndDrawMolecule(
+        d, 
+        mol3, 
+        highlightAtoms=list(range(mol3.GetNumAtoms())), 
+        highlightAtomColors=getAtomColors(mol3AtomMapping)
+    )
+    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp3.png')
+
+    mol4 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00014.mol')
+    mol4AtomMapping = [11]
+    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
+    rdMolDraw2D.PrepareAndDrawMolecule(
+        d, 
+        mol4, 
+        highlightAtoms=list(range(mol4.GetNumAtoms())), 
+        highlightAtomColors=getAtomColors(mol4AtomMapping)
+    )
+    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp4.png')
+
+####################################
+
+evaluateModel(
+    modelPath='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/model/tmpmodel.pt',
+    graphsDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/data/graphs_with_master_node',
+    reactionName='R00005',
+    reactionsDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/EnzymaticReactions',
+    csvDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/csv/csvAll',
+    molDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols',
+    outputDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images'
 )
-d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp1.png')
-
-mol2 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00001.mol')
-mol2AtomMapping = [7]
-d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-rdMolDraw2D.PrepareAndDrawMolecule(
-    d, 
-    mol2, 
-    highlightAtoms=list(range(mol2.GetNumAtoms())), 
-    highlightAtomColors=getAtomColors(mol2AtomMapping)
-)
-d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp2.png')
-
-mol3 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00011.mol')
-mol3AtomMapping = [8,9,10]
-d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-rdMolDraw2D.PrepareAndDrawMolecule(
-    d, 
-    mol3, 
-    highlightAtoms=list(range(mol3.GetNumAtoms())), 
-    highlightAtomColors=getAtomColors(mol3AtomMapping)
-)
-d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp3.png')
-
-mol4 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00014.mol')
-mol4AtomMapping = [11]
-d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-rdMolDraw2D.PrepareAndDrawMolecule(
-    d, 
-    mol4, 
-    highlightAtoms=list(range(mol4.GetNumAtoms())), 
-    highlightAtomColors=getAtomColors(mol4AtomMapping)
-)
-d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp4.png')

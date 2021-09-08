@@ -14,6 +14,7 @@ import copy
 import time
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 import torch
 from torch import nn
@@ -21,12 +22,27 @@ from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn.functional as F
 
 from rdkit import Chem
+from rdkit.Chem import rdChemReactions
 from rdkit.Chem.Draw import rdMolDraw2D
 import colorsys
+import math
+
+import svg_stack as ss
 
 n_types = 8
 batch_size = 1
 device = 'cpu'
+
+reactionTypes = {
+    0: "Hydrolase",
+    1: "Isomerase",
+    2: "Ligase",
+    3: "Lyase",
+    4: "Oxidoreductase",
+    5: "Transferase",
+    6: "Translocase",
+    7: "Unassigned",
+}
 
 # Dataset
 class ReactionsDataset(DGLDataset):
@@ -348,26 +364,25 @@ class DeeperGCN(nn.Module):
         self.output = nn.Linear(hid_dim, out_dim)
 
     def forward(self, g, edge_feats, node_feats=None):
-        print("Forward called...")
         with g.local_scope():
             hv = self.node_encoder(node_feats)
-            print("hv: ", hv.shape)
+            #print("hv: ", hv.shape)
             he = edge_feats
-            print("he: ", he.shape)
+            #print("he: ", he.shape)
 
             for layer in range(self.num_layers):
-                print("Layer: ", layer)
+                #print("Layer: ", layer)
                 hv1 = self.norms[layer](hv)
-                print("Normalization: ", hv1.shape)
+                #print("Normalization: ", hv1.shape)
                 hv1 = F.relu(hv1)
-                print("Relu: ", hv1.shape)
+                #print("Relu: ", hv1.shape)
                 hv1 = F.dropout(hv1, p=self.dropout, training=self.training)
-                print("Dropout: ", hv1.shape)
+                #print("Dropout: ", hv1.shape)
                 hv = self.gcns[layer](g, hv1, he) + hv
-                print("Layer output: ", hv.shape)
+                #print("Layer output: ", hv.shape)
 
             h_g = self.pooling(g, hv)
-            print("Pooling: ", h_g.shape)
+            #print("Pooling: ", h_g.shape)
             
             return self.output(h_g)
 
@@ -444,19 +459,9 @@ def collate_dgl(samples):
 
 #########################################################################
 
-""" 
-    0: Hydrolase
-    1: Isomerase
-    2: Ligase
-    3: Lyase
-    4: Oxidoreductase
-    5: Transferase
-    6: Translocase
-    7: Unassigned
-"""
-
 # Maps from rdkit atom indexes to DGL graph indexes  
 # Currently only for graphs with master nodes  
+# Returns tuple: (atomMappings, numReactants)
 def createAtomMappings(reactionsDir: str, reactionName: str, csvDir: str):
     reactionFile = open(reactionsDir + '/' + reactionName)
     reactionSides = reactionFile.read().split('-')
@@ -467,33 +472,46 @@ def createAtomMappings(reactionsDir: str, reactionName: str, csvDir: str):
     atomIndex = 0
     atomMapping = {}
 
+    compoundOrder = []
+
     for compound in leftSide:
         nodes = pd.read_csv(csvDir + '/' + compound + '/nodes.csv')
         atomMapping[compound] = list(range(atomIndex, len(nodes)+atomIndex))
-        atomIndex += len(nodes)+1
+        atomIndex += len(nodes)
+        compoundOrder.append(compound)
 
     for compound in rightSide:
         nodes = pd.read_csv(csvDir + '/' + compound + '/nodes.csv')
+        if compound in atomMapping:
+            compound = compound + "_2"
         atomMapping[compound] = list(range(atomIndex, len(nodes)+atomIndex))
-        atomIndex += len(nodes)+1
+        atomIndex += len(nodes)
+        compoundOrder.append(compound)
 
-    for compound in leftSide + rightSide:
+    for compound in compoundOrder:
         atomMapping[compound] = atomMapping[compound] + [atomIndex]
         atomIndex+=1
 
-    return atomMapping
+    return atomMapping, len(leftSide), compoundOrder
 
 # Runs evaluation on graph and returns class probability
-def testModelOnGraph(model, testGraph, reactionType):
+def testModelOnGraph(model, testGraph, reactionType, testPrediction=False):
     ps = model(testGraph, testGraph.edata['feat'], testGraph.ndata['feat'])
-    return torch.exp(ps)[reactionType]
+    _, top_class = torch.exp(ps).topk(1, dim=1)
+    if (testPrediction and top_class != reactionType):
+        print(torch.exp(ps))
+        raise Exception("Model did not predict correctly!")
+    return torch.exp(ps)[0][reactionType].item()
+
 
 # Returns atom color
 def getColorFromDelta(delta, minDelta, maxDelta):
+    # Red
     if (delta < 0):
         hue=0
         saturation = 1
         brightness = delta/minDelta
+    # Green
     else:
         hue=0.43
         saturation = 1
@@ -507,6 +525,17 @@ def getColorFromDelta(delta, minDelta, maxDelta):
 
     return colorsys.hls_to_rgb(hue, brightness, saturation)
 
+def getColorFromDelta2(delta, cmap, norm):
+    return cmap(norm(delta))[:3]
+
+# Opens reaction graph
+def getOriginalReactionGraph(graphsDir: str, reactionName: str):
+    graph = None
+    with open(graphsDir + '/' + reactionName, 'rb') as file:
+        graph = pickle.load(file)
+    file.close()
+    return graph
+
 # Perfoms a series of model evaluations by removing single atoms
 def evaluateModel(
     modelPath: str, 
@@ -516,16 +545,13 @@ def evaluateModel(
     reactionsDir: str, 
     csvDir: str,
     molDir: str,
+    tempImagesDir: str,
     outputDir: str
 ):
     
     # Load Reaction graph
-    testGraph = None
-    with open(graphsDir + '/' + reactionName, 'rb') as file:
-        testGraph = pickle.load(file)
-    file.close()
-    print(testGraph)
-
+    testGraph = getOriginalReactionGraph(graphsDir, reactionName)
+    
     node_feat_dim = testGraph.ndata['feat'].size()[-1]
     edge_feat_dim = testGraph.edata['feat'].size()[-1]
     out_dim = n_types
@@ -544,26 +570,27 @@ def evaluateModel(
     model.eval()
 
     # Atom mappings
-    atomMappings = createAtomMappings(reactionsDir, reactionName, csvDir)
+    atomMappings, numReactants, compoundOrder = createAtomMappings(reactionsDir, reactionName, csvDir)
 
     # Calculate original graph evaluation
-    originalProb = testModelOnGraph(model, testGraph, reactionType)
+    originalProb = testModelOnGraph(model, testGraph, reactionType, True)
 
     # Evaluate classification when single atom is removed
     removedDeltas = {}
     maxDelta = 0
     minDelta = 0
-    for compound, mapping in atomMappings:
+    for compound, mapping in atomMappings.items():
         removedProbs = []
 
         # Compounds with 1 atom and 1 master node
         if len(mapping) == 2:
-            removedProbs.append(modifiedGraph = dgl.remove_nodes(testGraph, mapping))
+            modifiedGraph = dgl.remove_nodes(getOriginalReactionGraph(graphsDir, reactionName), mapping)
+            removedProbs.append(testModelOnGraph(model, modifiedGraph, reactionType))
         # Larger compounds
         else:
             for i in range(len(mapping) - 1):
-                modifiedGraph = dgl.remove_nodes(testGraph, mapping[i])
-
+                node = mapping[i]
+                modifiedGraph = dgl.remove_nodes(getOriginalReactionGraph(graphsDir, reactionName), node)
                 removedProbs.append(testModelOnGraph(model, modifiedGraph, reactionType))
 
         removedDeltas[compound] = [((originalProb -  x) / originalProb) for x in removedProbs]
@@ -571,151 +598,115 @@ def evaluateModel(
         minDelta = min(minDelta, min(removedDeltas[compound]))
 
     # Visualization
-    for compound, deltas in removedDeltas:
-        
+    # Prepare Colormap
+    cmap = mpl.cm.get_cmap('PiYG')
+    norm = mpl.colors.Normalize(
+        vmin=math.floor(min(minDelta, maxDelta * -1)), 
+        vmax=math.ceil(max(maxDelta, abs(minDelta)))
+    )
+    fig = plt.figure()
+    ax = fig.add_axes([0.05, 0.80, 0.9, 0.08])
+    cb = mpl.colorbar.ColorbarBase(
+        ax, 
+        orientation='horizontal', 
+        cmap=cmap, 
+        norm=norm, 
+        label="Impact on Prediction",
+    )
+    plt.savefig(tempImagesDir + '/colorbar.svg', bbox_inches='tight')
+
+    # Draw Molecules
+    for compound, deltas in removedDeltas.items():
+
         # Load .mol file
-        mol = Chem.MolFromMolFile(molDir + '/' + compound + '.mol')
-        
+        mol = Chem.MolFromMolFile(molDir + '/' + compound.partition("_")[0] + '.mol')
+
         # Get atom colors
-        colors = [getColorFromDelta(delta, minDelta, maxDelta) for delta in deltas]
+        colors = {}
+        for i in range(len(deltas)):
+            #colors[i] = getColorFromDelta(deltas[i], minDelta, maxDelta)
+            colors[i] = getColorFromDelta2(deltas[i], cmap, norm)
         
+        # Get Molecule Drawing Size
+        d = rdMolDraw2D.MolDraw2DSVG(10000, 10000)
+        d.drawOptions().fixedBondLength = 25
+        rdMolDraw2D.PrepareAndDrawMolecule(d, mol)
+        d.FinishDrawing()
+        minX, minY, maxX, maxY = 10000, 10000, 0, 0
+        for i in range(mol.GetNumAtoms()):
+
+            coords = d.GetDrawCoords(i)
+            minX = min(minX, coords.x)
+            minY = min(minY, coords.y)
+            maxX = max(maxX, coords.x)
+            maxY = max(maxY, coords.y)
+
+        padding = 100
+        width = math.ceil(maxX - minX + padding)
+        height = math.ceil(maxY - minY + padding)
+
         # Draw molecules
-        d = rdMolDraw2D.MolDraw2DCairo(300, 300)
+        d = rdMolDraw2D.MolDraw2DSVG(width, height)
+        drawOptions = d.drawOptions()
+        rdMolDraw2D.MolDrawOptions.useBWAtomPalette(drawOptions)
+        drawOptions.fixedBondLength = 25
+        drawOptions.centreMoleculesBeforeDrawing = True
+        rdMolDraw2D.MolDraw2D.SetDrawOptions(d, drawOptions)
+
         rdMolDraw2D.PrepareAndDrawMolecule(
             d, 
-            mol1, 
-            highlightAtoms=list(range(mol1.GetNumAtoms())), 
-            highlightAtomColors=colors
+            mol, 
+            highlightAtoms=list(range(mol.GetNumAtoms())), 
+            highlightAtomColors=colors,
         )
-        if not os.path.exists(outputDir + '/' + reactionName):
-            os.makedirs(outputDir + '/' + reactionName)
-        d.WriteDrawingText(outputDir + '/' + reactionName + '/' + compound + '.png')
+        d.FinishDrawing()
+        if not os.path.exists(tempImagesDir + '/' + reactionName):
+            os.makedirs(tempImagesDir + '/' + reactionName)
+        #d.WriteDrawingText(outputDir + '/' + reactionName + '/' + compound + '.png')
+        f = open(tempImagesDir + '/' + reactionName + '/' + compound + '.svg', 'w')
+        f.write(d.GetDrawingText())
+        f.close()
 
-if (False):
-    # Load Reaction graph
-    testGraph = None
-    with open('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/data/graphs_with_master_node/R07308', 'rb') as file:
-        testGraph = pickle.load(file)
-    file.close()
-    print(testGraph)
-
-    node_feat_dim = testGraph.ndata['feat'].size()[-1]
-    edge_feat_dim = testGraph.edata['feat'].size()[-1]
-    out_dim = n_types
-
-    # Load model
-    model = DeeperGCN(
-        node_feat_dim=node_feat_dim,
-        edge_feat_dim=edge_feat_dim,
-        hid_dim=256,
-        out_dim=out_dim,
-        num_layers=7,
-        dropout=0.2,
-        learn_beta=True
-    ).to(device)
-    model.load_state_dict(torch.load('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/model/tmpmodel.pt', map_location=torch.device('cpu')))
-    model.eval()
-
-    # Remove specific nodes and edges
-    #testGraph = dgl.remove_nodes(testGraph, [11, 15])
-
-    # Test model
-    ps = model(testGraph, testGraph.edata['feat'], testGraph.ndata['feat'])
-    print(torch.exp(ps))
-    print(torch.exp(ps).topk(1, dim=1))
-
-    # Node significance
-    original_prob = 5319.6997
-    removed_probs = [3941.7529, 1728.9265, 7637.9722, 5430.9053, 5903.3496, 9545.0254, 5201.6157, 0.87585, 23178.2598, 10186.2119, 10186.2119, 3232.8752, 5319.6997, 5319.6997, 5319.6997, 5319.6997] 
-    removed_deltas = [((original_prob -  x) / original_prob) for x in removed_probs]
-    print(removed_deltas)
-
-    # Networkx visualization
-    nxG = nx.Graph(dgl.to_networkx(testGraph))
-    nx.draw(nxG, with_labels=True, cmap=plt.cm.Blues)#, node_color=removed_deltas)
-    plt.show()
-
-    # Rdkit visualization
-    from rdkit import Chem
-    from rdkit.Chem.Draw import rdMolDraw2D
-    import colorsys
-
-    def getColorFromDelta(delta, minDelta, maxDelta):
-        if (delta < 0):
-            hue=0
-            saturation = 1
-            brightness = delta/minDelta
-        else:
-            hue=0.43
-            saturation = 1
-            brightness = delta/maxDelta
-
-        a=0
-        b=1
-        c=1
-        d=0.5
-        brightness = c + (((d-c)/(b-a)) * (brightness-a))
-
-        return colorsys.hls_to_rgb(hue, brightness, saturation)    
-
-    def getAtomColors(mapping):
-        colors = {}
-        for idx in range(len(mapping)):
-            colors[idx] = getColorFromDelta(removed_deltas[mapping[idx]], removed_deltas)
-        return colors
-
-    mol1 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C01010.mol')
-    mol1AtomMapping = [0, 1, 2, 3, 4, 5, 6] #Maps from rdkit atom indexes to removed_deltas
-    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-    rdMolDraw2D.PrepareAndDrawMolecule(
-        d, 
-        mol1, 
-        highlightAtoms=list(range(mol1.GetNumAtoms())), 
-        highlightAtomColors=getAtomColors(mol1AtomMapping)
-    )
-    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp1.png')
-
-    mol2 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00001.mol')
-    mol2AtomMapping = [7]
-    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-    rdMolDraw2D.PrepareAndDrawMolecule(
-        d, 
-        mol2, 
-        highlightAtoms=list(range(mol2.GetNumAtoms())), 
-        highlightAtomColors=getAtomColors(mol2AtomMapping)
-    )
-    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp2.png')
-
-    mol3 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00011.mol')
-    mol3AtomMapping = [8,9,10]
-    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-    rdMolDraw2D.PrepareAndDrawMolecule(
-        d, 
-        mol3, 
-        highlightAtoms=list(range(mol3.GetNumAtoms())), 
-        highlightAtomColors=getAtomColors(mol3AtomMapping)
-    )
-    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp3.png')
-
-    mol4 = Chem.MolFromMolFile('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete/C00014.mol')
-    mol4AtomMapping = [11]
-    d = rdMolDraw2D.MolDraw2DCairo(300, 300)
-    rdMolDraw2D.PrepareAndDrawMolecule(
-        d, 
-        mol4, 
-        highlightAtoms=list(range(mol4.GetNumAtoms())), 
-        highlightAtomColors=getAtomColors(mol4AtomMapping)
-    )
-    d.WriteDrawingText('C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images/temp4.png')
+    #Draw Reaction
+    doc = ss.Document()
+    layout1 = ss.HBoxLayout()
+    layout2 = ss.VBoxLayout()
+    count = 0
+    for compound in compoundOrder:
+        if (count == numReactants):
+            layout1.addSVG(tempImagesDir + '/' + 'arrow.svg', alignment=ss.AlignVCenter)
+        elif (count > 0):
+            layout1.addSVG(tempImagesDir + '/' + 'plus.svg', alignment=ss.AlignVCenter)
+        layout1.addSVG(tempImagesDir + '/' + reactionName + '/' + compound + '.svg', alignment=ss.AlignVCenter)
+        count += 1
+    layout2.addLayout(layout1)
+    layout2.addSVG(tempImagesDir + '/colorbar.svg', alignment=ss.AlignHCenter)
+    doc.setLayout(layout2)
+    if not os.path.exists(outputDir + '/' + reactionTypes[reactionType]):
+        os.makedirs(outputDir + '/' + reactionTypes[reactionType])
+    doc.save(outputDir + '/' + reactionTypes[reactionType] + '/' + reactionName + '.svg')
 
 ####################################
 
+""" 
+    Reaction Types:
+    0: Hydrolase
+    1: Isomerase
+    2: Ligase
+    3: Lyase
+    4: Oxidoreductase
+    5: Transferase
+    6: Translocase
+    7: Unassigned
+"""
 evaluateModel(
     modelPath='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/model/tmpmodel.pt',
     graphsDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/data/graphs_with_master_node',
-    reactionName='R00005',
+    reactionName='R10531',
+    reactionType=6,
     reactionsDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/EnzymaticReactions',
     csvDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/csv/csvAll',
-    molDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols',
-    outputDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images'
+    molDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete',
+    tempImagesDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images',
+    outputDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/results'
 )

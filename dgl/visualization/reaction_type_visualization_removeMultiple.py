@@ -3,10 +3,11 @@ import dgl.function as dglfn
 from dgl.data import DGLDataset
 import os
 from dgl.data.graph_serialize import load_graphs, save_graphs
-from dgl.dataloading import GraphDataLoader
+from dgl.dataloading import GraphDataLoader, neighbor
 from dgl.nn.pytorch.glob import AvgPooling
 from dgl.nn.functional import edge_softmax
 from dgl.readout import mean_nodes
+from numpy.core.fromnumeric import mean
 import pandas as pd
 import pickle
 from sklearn.metrics import roc_curve, auc
@@ -503,28 +504,6 @@ def testModelOnGraph(model, testGraph, reactionType, testPrediction=False):
         raise Exception("Model did not predict correctly!")
     return torch.exp(ps)[0][reactionType].item()
 
-
-# Returns atom color
-def getColorFromDelta(delta, minDelta, maxDelta):
-    # Red
-    if (delta < 0):
-        hue=0
-        saturation = 1
-        brightness = delta/minDelta
-    # Green
-    else:
-        hue=0.43
-        saturation = 1
-        brightness = delta/maxDelta
-
-    a=0
-    b=1
-    c=1
-    d=0.5
-    brightness = c + (((d-c)/(b-a)) * (brightness-a))
-
-    return colorsys.hls_to_rgb(hue, brightness, saturation)
-
 def getColorFromDelta2(delta, cmap, norm):
     return cmap(norm(delta))[:3]
 
@@ -580,19 +559,40 @@ def evaluateModel(
     maxDelta = 0
     minDelta = 0
     for compound, mapping in atomMappings.items():
-        removedProbs = []
+        removedProbs = [[] for _ in range(len(mapping)-1)]
 
-        # Compounds with 1 atom and 1 master node
-        if len(mapping) == 2:
-            modifiedGraph = dgl.remove_nodes(getOriginalReactionGraph(graphsDir, reactionName), mapping)
-            removedProbs.append(testModelOnGraph(model, modifiedGraph, reactionType))
-        # Larger compounds
-        else:
-            for i in range(len(mapping) - 1):
-                node = mapping[i]
-                modifiedGraph = dgl.remove_nodes(getOriginalReactionGraph(graphsDir, reactionName), node)
-                removedProbs.append(testModelOnGraph(model, modifiedGraph, reactionType))
+        for atomIndex in range(len(mapping) - 1):
+            node = mapping[atomIndex]
+            masterNode = mapping[-1]
+            atomsToRemove = [node]
+            removedAtomsCount = 1
+            
+            # Find neighbors
+            for edge in testGraph.out_edges(node)[1]:
+                neighborNode = edge.item()
+                if (neighborNode != masterNode):
+                    atomsToRemove.append(neighborNode)
+                    removedAtomsCount += 1
+            
+            # Check if we need to remove master node
+            if (len(atomsToRemove) == len(mapping)-1):
+                atomsToRemove.append(masterNode)
 
+            # Remove atoms
+            modifiedGraph = dgl.remove_nodes(getOriginalReactionGraph(graphsDir, reactionName), atomsToRemove)
+            prob = testModelOnGraph(model, modifiedGraph, reactionType)
+
+            #print(prob)
+            #print(atomsToRemove)
+
+            for removedAtom in atomsToRemove:
+                if (removedAtom != masterNode):
+                    index = mapping.index(removedAtom)
+                    removedProbs[index].append(prob) 
+
+        # print(removedProbs)
+
+        removedProbs = [mean(probs) for probs in removedProbs]
         removedDeltas[compound] = [((originalProb -  x) / originalProb) for x in removedProbs]
         maxDelta = max(maxDelta, max(removedDeltas[compound]))
         minDelta = min(minDelta, min(removedDeltas[compound]))
@@ -702,11 +702,11 @@ def evaluateModel(
 evaluateModel(
     modelPath='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/model/tmpmodel.pt',
     graphsDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/data/graphs_with_master_node',
-    reactionName='R03028',
+    reactionName='R12212',
     reactionType=6,
     reactionsDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/reactions/EnzymaticReactions',
     csvDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/csv/csvAll',
     molDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/data/mols/MolsComplete',
     tempImagesDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/images',
-    outputDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/results'
+    outputDir='C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/dgl/visualization/results_removeMultiple'
 )

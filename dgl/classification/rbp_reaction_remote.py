@@ -102,7 +102,7 @@ class AtomEncoder(torch.nn.Module):
         
         self.atom_embedding_list = torch.nn.ModuleList()
 
-        full_atom_feature_dims = [54, 8, 12, 12, 10, 6, 2]
+        full_atom_feature_dims = [81, 8, 12, 12, 10, 6, 2]
 
         for i, dim in enumerate(full_atom_feature_dims):
             emb = torch.nn.Embedding(dim, emb_dim)
@@ -463,7 +463,7 @@ model = DeeperGCN(
 ).to(device)
 print(model)
 
-opt = torch.optim.Adam(model.parameters(), lr=0.01)
+opt = torch.optim.Adam(model.parameters(), lr=0.01, )
 loss_fn = nn.BCEWithLogitsLoss()
 
  # training & validation & testing
@@ -488,6 +488,8 @@ for i in range(1000):
     if valid_auc > best_auc:
         best_auc = valid_auc
         best_model = copy.deepcopy(model)
+
+        torch.save(model.state_dict(), '/home/bsmrdelj/local/git/magistrska/dgl/model/rbpmodel.pt')
 
 print('---------- Testing ----------')
 test_auc = test(best_model, device, test_dataloader,)

@@ -1,0 +1,176 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with svg_stack (http://github.com/astraw/svg_stack) -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:rdkit="http://www.rdkit.org/xml" version="1.1" width="1411.7993999999999" height="585.0">
+  <defs/>
+  <g id="id0:id0" transform="translate(0,0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20" font-weight="Bold">POSITIVE</text>
+  </g>
+  <g id="id1:id1" transform="translate(7.218049999999835,60.0)"><g id="id1:id0:id0" transform="translate(0,0.0)"><g id="id1:id0:id0:id0" transform="matrix(1.0,0,0,1.0,54.74365,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="170" height="170" x="0" y="0"> </rect>
+<path class="bond-0" d="M 118.695,84.8438 L 106.136,84.8438" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 106.136,84.8438 L 93.576,84.8438" style="fill:none;fill-rule:evenodd;stroke:#FF7F00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-1" d="M 89.4298,91.0285 L 89.3836,102.386" style="fill:none;fill-rule:evenodd;stroke:#FF7F00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-1" d="M 89.3836,102.386 L 89.3373,113.744" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-2" d="M 85.194,84.8438 L 72.7242,84.8438" style="fill:none;fill-rule:evenodd;stroke:#FF7F00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-2" d="M 72.7242,84.8438 L 60.2545,84.8438" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-3" d="M 93.1797,78.6473 L 93.1339,67.4424" style="fill:none;fill-rule:evenodd;stroke:#FF7F00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-3" d="M 93.1339,67.4424 L 93.088,56.2375" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-3" d="M 85.6798,78.678 L 85.6339,67.4731" style="fill:none;fill-rule:evenodd;stroke:#FF7F00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-3" d="M 85.6339,67.4731 L 85.5881,56.2681" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-0" d="M 119.57 84.8738 Q 119.57 82.3238, 120.83 80.8988 Q 122.09 79.4738, 124.445 79.4738 Q 126.8 79.4738, 128.06 80.8988 Q 129.32 82.3238, 129.32 84.8738 Q 129.32 87.4538, 128.045 88.9238 Q 126.77 90.3788, 124.445 90.3788 Q 122.105 90.3788, 120.83 88.9238 Q 119.57 87.4688, 119.57 84.8738 M 124.445 89.1788 Q 126.065 89.1788, 126.935 88.0988 Q 127.82 87.0038, 127.82 84.8738 Q 127.82 82.7888, 126.935 81.7388 Q 126.065 80.6738, 124.445 80.6738 Q 122.825 80.6738, 121.94 81.7238 Q 121.07 82.7738, 121.07 84.8738 Q 121.07 87.0188, 121.94 88.0988 Q 122.825 89.1788, 124.445 89.1788 " fill="#FF0000"/>
+<path class="atom-1" d="M 89.2 79.5338 Q 91.015 79.5338, 91.93 80.3588 Q 92.845 81.1688, 92.845 82.6538 Q 92.845 84.1238, 91.9 84.9638 Q 90.97 85.7888, 89.2 85.7888 L 87.505 85.7888 L 87.505 90.1538 L 86.065 90.1538 L 86.065 79.5338 L 89.2 79.5338 M 89.2 84.5888 Q 90.235 84.5888, 90.79 84.0938 Q 91.345 83.5988, 91.345 82.6538 Q 91.345 81.7088, 90.79 81.2288 Q 90.25 80.7338, 89.2 80.7338 L 87.505 80.7338 L 87.505 84.5888 L 89.2 84.5888 " fill="#FF7F00"/>
+<path class="atom-2" d="M 84.4375 119.864 Q 84.4375 117.314, 85.6975 115.889 Q 86.9575 114.464, 89.3125 114.464 Q 91.6675 114.464, 92.9275 115.889 Q 94.1875 117.314, 94.1875 119.864 Q 94.1875 122.444, 92.9125 123.914 Q 91.6375 125.369, 89.3125 125.369 Q 86.9725 125.369, 85.6975 123.914 Q 84.4375 122.459, 84.4375 119.864 M 89.3125 124.169 Q 90.9325 124.169, 91.8025 123.089 Q 92.6875 121.994, 92.6875 119.864 Q 92.6875 117.779, 91.8025 116.729 Q 90.9325 115.664, 89.3125 115.664 Q 87.6925 115.664, 86.8075 116.714 Q 85.9375 117.764, 85.9375 119.864 Q 85.9375 122.009, 86.8075 123.089 Q 87.6925 124.169, 89.3125 124.169 " fill="#FF0000"/>
+<path class="atom-2" d="M 95.4625 114.584 L 96.9025 114.584 L 96.9025 119.099 L 102.332 119.099 L 102.332 114.584 L 103.772 114.584 L 103.772 125.204 L 102.332 125.204 L 102.332 120.299 L 96.9025 120.299 L 96.9025 125.204 L 95.4625 125.204 L 95.4625 114.584 " fill="#FF0000"/>
+<path class="atom-3" d="M 40.68 79.5938 L 42.12 79.5938 L 42.12 84.1088 L 47.55 84.1088 L 47.55 79.5938 L 48.99 79.5938 L 48.99 90.2138 L 47.55 90.2138 L 47.55 85.3088 L 42.12 85.3088 L 42.12 90.2138 L 40.68 90.2138 L 40.68 79.5938 " fill="#FF0000"/>
+<path class="atom-3" d="M 49.74 84.8738 Q 49.74 82.3238, 51 80.8988 Q 52.26 79.4738, 54.615 79.4738 Q 56.97 79.4738, 58.23 80.8988 Q 59.49 82.3238, 59.49 84.8738 Q 59.49 87.4538, 58.215 88.9238 Q 56.94 90.3788, 54.615 90.3788 Q 52.275 90.3788, 51 88.9238 Q 49.74 87.4688, 49.74 84.8738 M 54.615 89.1788 Q 56.235 89.1788, 57.105 88.0988 Q 57.99 87.0038, 57.99 84.8738 Q 57.99 82.7888, 57.105 81.7388 Q 56.235 80.6738, 54.615 80.6738 Q 52.995 80.6738, 52.11 81.7238 Q 51.24 82.7738, 51.24 84.8738 Q 51.24 87.0188, 52.11 88.0988 Q 52.995 89.1788, 54.615 89.1788 " fill="#FF0000"/>
+<path class="atom-4" d="M 84.4375 50.0312 Q 84.4375 47.4812, 85.6975 46.0562 Q 86.9575 44.6312, 89.3125 44.6312 Q 91.6675 44.6312, 92.9275 46.0562 Q 94.1875 47.4812, 94.1875 50.0312 Q 94.1875 52.6112, 92.9125 54.0812 Q 91.6375 55.5362, 89.3125 55.5362 Q 86.9725 55.5362, 85.6975 54.0812 Q 84.4375 52.6262, 84.4375 50.0312 M 89.3125 54.3362 Q 90.9325 54.3362, 91.8025 53.2562 Q 92.6875 52.1612, 92.6875 50.0312 Q 92.6875 47.9462, 91.8025 46.8962 Q 90.9325 45.8312, 89.3125 45.8312 Q 87.6925 45.8312, 86.8075 46.8812 Q 85.9375 47.9312, 85.9375 50.0312 Q 85.9375 52.1762, 86.8075 53.2562 Q 87.6925 54.3362, 89.3125 54.3362 " fill="#FF0000"/>
+</g>
+  <g id="id1:id0:id1:id1" transform="translate(0.0,170.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: O=P(O)(O)O</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">309 occurences (36.52%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: 0.247</text>
+  </g>
+</g>
+  <g id="id1:id1:id1" transform="translate(279.4873,8.0)"><g id="id1:id1:id0:id0" transform="matrix(1.0,0,0,1.0,60.283950000000004,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="159" height="154" x="0" y="0"> </rect>
+<path class="bond-0" d="M 84.3358,91.6651 L 95.3271,99.2525" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 95.3271,99.2525 L 106.318,106.84" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 88.5965,85.4929 L 99.5878,93.0803" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-dasharray:6,6"/>
+<path class="bond-0" d="M 99.5878,93.0803 L 110.579,100.668" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-dasharray:6,6"/>
+<path class="bond-1" d="M 49.5513,95.7338 L 63.7352,93.0642 L 62.5687,89.5002 Z" style="fill:#000000;fill-rule:evenodd;fill-opacity:1;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-1" d="M 63.7352,93.0642 L 75.5861,83.2667 L 77.9191,90.3946 Z" style="fill:#0000FF;fill-rule:evenodd;fill-opacity:1;stroke:#0000FF;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-1" d="M 63.7352,93.0642 L 62.5687,89.5002 L 75.5861,83.2667 Z" style="fill:#0000FF;fill-rule:evenodd;fill-opacity:1;stroke:#0000FF;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-2" d="M 87.3242,80.2263 L 92.296,65.849" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-2" d="M 92.296,65.849 L 97.2678,51.4718" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-2" d="M 80.236,77.7751 L 85.2079,63.3979" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-dasharray:6,6"/>
+<path class="bond-2" d="M 85.2079,63.3979 L 90.1797,49.0207" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-dasharray:6,6"/>
+<path class="atom-0" d="M 79.2763 79.9262 L 82.7563 85.5512 Q 83.1013 86.1062, 83.6563 87.1112 Q 84.2113 88.1162, 84.2413 88.1762 L 84.2413 79.9262 L 85.6513 79.9262 L 85.6513 90.5462 L 84.1963 90.5462 L 80.4613 84.3962 Q 80.0263 83.6762, 79.5613 82.8512 Q 79.1113 82.0262, 78.9763 81.7712 L 78.9763 90.5462 L 77.5963 90.5462 L 77.5963 79.9262 L 79.2763 79.9262 " fill="#0000FF"/>
+</g>
+  <g id="id1:id1:id1:id1" transform="translate(0.0,154.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: cn(c)C</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">214 occurences (25.3%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: 0.145</text>
+  </g>
+</g>
+  <g id="id1:id2:id2" transform="translate(559.0552,26.0)"><g id="id1:id2:id0:id0" transform="matrix(1.0,0,0,1.0,74.2217,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="131" height="118" x="0" y="0"> </rect>
+<path class="bond-0" d="M 84.0824,47.2334 L 84.8324,48.5324" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 78.6259,49.5178 L 80.1259,52.1159" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 73.1694,51.8022 L 75.4194,55.6993" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:1.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 67.7128,54.0866 L 70.7129,59.2827" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:1.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 62.2563,56.3709 L 66.0064,62.8661" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:1.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-0" d="M 40.4291 57.139 L 41.8691 57.139 L 41.8691 61.654 L 47.2991 61.654 L 47.2991 57.139 L 48.7391 57.139 L 48.7391 67.759 L 47.2991 67.759 L 47.2991 62.854 L 41.8691 62.854 L 41.8691 67.759 L 40.4291 67.759 L 40.4291 57.139 " fill="#0000FF"/>
+<path class="atom-0" d="M 49.2539 67.3864 Q 49.5113 66.7231, 50.1251 66.3568 Q 50.7389 65.9806, 51.5903 65.9806 Q 52.6496 65.9806, 53.2436 66.5548 Q 53.8376 67.129, 53.8376 68.1487 Q 53.8376 69.1882, 53.0654 70.1584 Q 52.3031 71.1286, 50.7191 72.277 L 53.9564 72.277 L 53.9564 73.069 L 49.2341 73.069 L 49.2341 72.4057 Q 50.5409 71.4751, 51.3131 70.7821 Q 52.0952 70.0891, 52.4714 69.4654 Q 52.8476 68.8417, 52.8476 68.1982 Q 52.8476 67.525, 52.511 67.1488 Q 52.1744 66.7726, 51.5903 66.7726 Q 51.026 66.7726, 50.6498 67.0003 Q 50.2736 67.228, 50.0063 67.7329 L 49.2539 67.3864 " fill="#0000FF"/>
+<path class="atom-0" d="M 56.8814 57.139 L 60.3614 62.764 Q 60.7064 63.319, 61.2614 64.324 Q 61.8164 65.329, 61.8464 65.389 L 61.8464 57.139 L 63.2564 57.139 L 63.2564 67.759 L 61.8014 67.759 L 58.0664 61.609 Q 57.6314 60.889, 57.1664 60.064 Q 56.7164 59.239, 56.5814 58.984 L 56.5814 67.759 L 55.2014 67.759 L 55.2014 57.139 L 56.8814 57.139 " fill="#0000FF"/>
+</g>
+  <g id="id1:id2:id1:id1" transform="translate(0.0,118.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: CN</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">85 occurences (10.05%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: 0.284</text>
+  </g>
+</g>
+  <g id="id1:id3:id3" transform="translate(838.4986,26.0)"><g id="id1:id3:id0:id0" transform="matrix(1.0,0,0,1.0,59.74365,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="160" height="118" x="0" y="0"> </rect>
+<path class="bond-0" d="M 50.25,41.8248 L 62.6798,49.1365" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 62.6798,49.1365 L 75.1096,56.4481" style="fill:none;fill-rule:evenodd;stroke:#0000FF;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-1" d="M 109.75,41.8248 L 96.3695,47.5203 L 98.2709,50.7526 Z" style="fill:#000000;fill-rule:evenodd;fill-opacity:1;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-1" d="M 96.3695,47.5203 L 86.7917,59.6804 L 82.9891,53.2158 Z" style="fill:#0000FF;fill-rule:evenodd;fill-opacity:1;stroke:#0000FF;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-1" d="M 96.3695,47.5203 L 98.2709,50.7526 L 86.7917,59.6804 Z" style="fill:#0000FF;fill-rule:evenodd;fill-opacity:1;stroke:#0000FF;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="atom-1" d="M 77.6525 54.0148 L 81.1325 59.6398 Q 81.4775 60.1948, 82.0325 61.1998 Q 82.5875 62.2048, 82.6175 62.2648 L 82.6175 54.0148 L 84.0275 54.0148 L 84.0275 64.6348 L 82.5725 64.6348 L 78.8375 58.4848 Q 78.4025 57.7648, 77.9375 56.9398 Q 77.4875 56.1148, 77.3525 55.8598 L 77.3525 64.6348 L 75.9725 64.6348 L 75.9725 54.0148 L 77.6525 54.0148 " fill="#0000FF"/>
+<path class="atom-1" d="M 75.845 65.6968 L 77.285 65.6968 L 77.285 70.2118 L 82.715 70.2118 L 82.715 65.6968 L 84.155 65.6968 L 84.155 76.3168 L 82.715 76.3168 L 82.715 71.4118 L 77.285 71.4118 L 77.285 76.3168 L 75.845 76.3168 L 75.845 65.6968 " fill="#0000FF"/>
+</g>
+  <g id="id1:id3:id1:id1" transform="translate(0.0,118.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: CNC</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">73 occurences (8.63%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: 0.203</text>
+  </g>
+</g>
+  <g id="id1:id4:id4" transform="translate(1117.9859000000001,1.5)"><g id="id1:id4:id0:id0" transform="matrix(1.0,0,0,1.0,89.68870000000001,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="100" height="167" x="0" y="0"> </rect>
+<path class="bond-0" d="M 50,116.25 L 51.875,103.661 L 48.125,103.661 Z" style="fill:#000000;fill-rule:evenodd;fill-opacity:1;stroke:#000000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-0" d="M 51.875,103.661 L 46.25,91.0725 L 53.75,91.0725 Z" style="fill:#FF0000;fill-rule:evenodd;fill-opacity:1;stroke:#FF0000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-0" d="M 51.875,103.661 L 48.125,103.661 L 46.25,91.0725 Z" style="fill:#FF0000;fill-rule:evenodd;fill-opacity:1;stroke:#FF0000;stroke-width:2px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"/>
+<path class="bond-1" d="M 50,78.505 L 50,64.1275" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-1" d="M 50,64.1275 L 50,49.75" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-1" d="M 45.125 84.78 Q 45.125 82.23, 46.385 80.805 Q 47.645 79.38, 50 79.38 Q 52.355 79.38, 53.615 80.805 Q 54.875 82.23, 54.875 84.78 Q 54.875 87.36, 53.6 88.83 Q 52.325 90.285, 50 90.285 Q 47.66 90.285, 46.385 88.83 Q 45.125 87.375, 45.125 84.78 M 50 89.085 Q 51.62 89.085, 52.49 88.005 Q 53.375 86.91, 53.375 84.78 Q 53.375 82.695, 52.49 81.645 Q 51.62 80.58, 50 80.58 Q 48.38 80.58, 47.495 81.63 Q 46.625 82.68, 46.625 84.78 Q 46.625 86.925, 47.495 88.005 Q 48.38 89.085, 50 89.085 " fill="#FF0000"/>
+</g>
+  <g id="id1:id4:id1:id1" transform="translate(0.0,167.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: COC</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">71 occurences (8.39%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: 0.232</text>
+  </g>
+</g>
+</g>
+  <g id="id2:id2" transform="translate(0,310.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20" font-weight="Bold">NEGATIVE</text>
+  </g>
+  <g id="id3:id3" transform="translate(0.0,370.0)"><g id="id3:id0:id0" transform="translate(0,0.0)"><g id="id3:id0:id0:id0" transform="matrix(1.0,0,0,1.0,91.74119999999999,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="101" height="135" x="0" y="0"> </rect>
+<path class="bond-0" d="M 45.9151,55.6279 L 45.8681,66.9486" style="fill:none;fill-rule:evenodd;stroke:#FF7F00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 45.8681,66.9486 L 45.8211,78.2693" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-0" d="M 45.6858 44.1351 Q 47.5008 44.1351, 48.4158 44.9601 Q 49.3308 45.7701, 49.3308 47.2551 Q 49.3308 48.7251, 48.3858 49.5651 Q 47.4558 50.3901, 45.6858 50.3901 L 43.9908 50.3901 L 43.9908 54.7551 L 42.5508 54.7551 L 42.5508 44.1351 L 45.6858 44.1351 M 45.6858 49.1901 Q 46.7208 49.1901, 47.2758 48.6951 Q 47.8308 48.2001, 47.8308 47.2551 Q 47.8308 46.3101, 47.2758 45.8301 Q 46.7358 45.3351, 45.6858 45.3351 L 43.9908 45.3351 L 43.9908 49.1901 L 45.6858 49.1901 " fill="#FF7F00"/>
+<path class="atom-1" d="M 40.9208 84.3876 Q 40.9208 81.8376, 42.1808 80.4126 Q 43.4408 78.9876, 45.7958 78.9876 Q 48.1508 78.9876, 49.4108 80.4126 Q 50.6708 81.8376, 50.6708 84.3876 Q 50.6708 86.9676, 49.3958 88.4376 Q 48.1208 89.8926, 45.7958 89.8926 Q 43.4558 89.8926, 42.1808 88.4376 Q 40.9208 86.9826, 40.9208 84.3876 M 45.7958 88.6926 Q 47.4158 88.6926, 48.2858 87.6126 Q 49.1708 86.5176, 49.1708 84.3876 Q 49.1708 82.3026, 48.2858 81.2526 Q 47.4158 80.1876, 45.7958 80.1876 Q 44.1758 80.1876, 43.2908 81.2376 Q 42.4208 82.2876, 42.4208 84.3876 Q 42.4208 86.5326, 43.2908 87.6126 Q 44.1758 88.6926, 45.7958 88.6926 " fill="#FF0000"/>
+<path class="atom-1" d="M 51.9458 79.1076 L 53.3858 79.1076 L 53.3858 83.6226 L 58.8158 83.6226 L 58.8158 79.1076 L 60.2558 79.1076 L 60.2558 89.7276 L 58.8158 89.7276 L 58.8158 84.8226 L 53.3858 84.8226 L 53.3858 89.7276 L 51.9458 89.7276 L 51.9458 79.1076 " fill="#FF0000"/>
+</g>
+  <g id="id3:id0:id1:id1" transform="translate(0.0,135.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: OP</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">273 occurences (32.27%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: -0.167</text>
+  </g>
+</g>
+  <g id="id3:id1:id1" transform="translate(284.4824,9.5)"><g id="id3:id1:id0:id0" transform="matrix(1.0,0,0,1.0,73.03370000000001,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="128" height="116" x="0" y="0"> </rect>
+<path class="bond-0" d="M 45.1351,47.8209 L 56.7998,54.5854" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 56.7998,54.5854 L 68.4645,61.3499" style="fill:none;fill-rule:evenodd;stroke:#CCCC00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-1" d="M 69.6651 67.4459 Q 69.7851 67.4909, 70.2801 67.7009 Q 70.7751 67.9109, 71.3151 68.0459 Q 71.8701 68.1659, 72.4101 68.1659 Q 73.4151 68.1659, 74.0001 67.6859 Q 74.5851 67.1909, 74.5851 66.3359 Q 74.5851 65.7509, 74.2851 65.3909 Q 74.0001 65.0309, 73.5501 64.8359 Q 73.1001 64.6409, 72.3501 64.4159 Q 71.4051 64.1309, 70.8351 63.8609 Q 70.2801 63.5909, 69.8751 63.0209 Q 69.4851 62.4509, 69.4851 61.4909 Q 69.4851 60.1559, 70.3851 59.3309 Q 71.3001 58.5059, 73.1001 58.5059 Q 74.3301 58.5059, 75.7251 59.0909 L 75.3801 60.2459 Q 74.1051 59.7209, 73.1451 59.7209 Q 72.1101 59.7209, 71.5401 60.1559 Q 70.9701 60.5759, 70.9851 61.3109 Q 70.9851 61.8809, 71.2701 62.2259 Q 71.5701 62.5709, 71.9901 62.7659 Q 72.4251 62.9609, 73.1451 63.1859 Q 74.1051 63.4859, 74.6751 63.7859 Q 75.2451 64.0859, 75.6501 64.7009 Q 76.0701 65.3009, 76.0701 66.3359 Q 76.0701 67.8059, 75.0801 68.6009 Q 74.1051 69.3809, 72.4701 69.3809 Q 71.5251 69.3809, 70.8051 69.1709 Q 70.1001 68.9759, 69.2601 68.6309 L 69.6651 67.4459 " fill="#CCCC00"/>
+<path class="atom-1" d="M 77.3451 58.4759 L 78.7851 58.4759 L 78.7851 62.9909 L 84.2151 62.9909 L 84.2151 58.4759 L 85.6551 58.4759 L 85.6551 69.0959 L 84.2151 69.0959 L 84.2151 64.1909 L 78.7851 64.1909 L 78.7851 69.0959 L 77.3451 69.0959 L 77.3451 58.4759 " fill="#CCCC00"/>
+</g>
+  <g id="id3:id1:id1:id1" transform="translate(0.0,116.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: CS</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">101 occurences (11.94%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: -0.21</text>
+  </g>
+</g>
+  <g id="id3:id2:id2" transform="translate(558.5498,8.5)"><g id="id3:id2:id0:id0" transform="matrix(1.0,0,0,1.0,61.68629999999999,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="161" height="118" x="0" y="0"> </rect>
+<path class="bond-0" d="M 49.69,47.46 L 62.705,54.9744" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 62.705,54.9744 L 75.72,62.4889" style="fill:none;fill-rule:evenodd;stroke:#CCCC00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-1" d="M 84.28,62.4889 L 97.295,54.9744" style="fill:none;fill-rule:evenodd;stroke:#CCCC00;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-1" d="M 97.295,54.9744 L 110.31,47.46" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-1" d="M 77 68.605 Q 77.12 68.65, 77.615 68.86 Q 78.11 69.07, 78.65 69.205 Q 79.205 69.325, 79.745 69.325 Q 80.75 69.325, 81.335 68.845 Q 81.92 68.35, 81.92 67.495 Q 81.92 66.91, 81.62 66.55 Q 81.335 66.19, 80.885 65.995 Q 80.435 65.8, 79.685 65.575 Q 78.74 65.29, 78.17 65.02 Q 77.615 64.75, 77.21 64.18 Q 76.82 63.61, 76.82 62.65 Q 76.82 61.315, 77.72 60.49 Q 78.635 59.665, 80.435 59.665 Q 81.665 59.665, 83.06 60.25 L 82.715 61.405 Q 81.44 60.88, 80.48 60.88 Q 79.445 60.88, 78.875 61.315 Q 78.305 61.735, 78.32 62.47 Q 78.32 63.04, 78.605 63.385 Q 78.905 63.73, 79.325 63.925 Q 79.76 64.12, 80.48 64.345 Q 81.44 64.645, 82.01 64.945 Q 82.58 65.245, 82.985 65.86 Q 83.405 66.46, 83.405 67.495 Q 83.405 68.965, 82.415 69.76 Q 81.44 70.54, 79.805 70.54 Q 78.86 70.54, 78.14 70.33 Q 77.435 70.135, 76.595 69.79 L 77 68.605 " fill="#CCCC00"/>
+</g>
+  <g id="id3:id2:id1:id1" transform="translate(0.0,118.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: CSC</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">92 occurences (10.87%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: -0.242</text>
+  </g>
+</g>
+  <g id="id3:id3:id3" transform="translate(842.9223999999999,8.5)"><g id="id3:id3:id0:id0" transform="matrix(1.0,0,0,1.0,77.18629999999999,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="130" height="118" x="0" y="0"> </rect>
+<path class="bond-0" d="M 85.9289,47.9909 L 73.8492,54.9676" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 73.8492,54.9676 L 61.7695,61.9443" style="fill:none;fill-rule:evenodd;stroke:#FF0000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-1" d="M 42.0964 60.0084 L 43.5364 60.0084 L 43.5364 64.5234 L 48.9664 64.5234 L 48.9664 60.0084 L 50.4064 60.0084 L 50.4064 70.6284 L 48.9664 70.6284 L 48.9664 65.7234 L 43.5364 65.7234 L 43.5364 70.6284 L 42.0964 70.6284 L 42.0964 60.0084 " fill="#FF0000"/>
+<path class="atom-1" d="M 51.1564 65.2884 Q 51.1564 62.7384, 52.4164 61.3134 Q 53.6764 59.8884, 56.0314 59.8884 Q 58.3864 59.8884, 59.6464 61.3134 Q 60.9064 62.7384, 60.9064 65.2884 Q 60.9064 67.8684, 59.6314 69.3384 Q 58.3564 70.7934, 56.0314 70.7934 Q 53.6914 70.7934, 52.4164 69.3384 Q 51.1564 67.8834, 51.1564 65.2884 M 56.0314 69.5934 Q 57.6514 69.5934, 58.5214 68.5134 Q 59.4064 67.4184, 59.4064 65.2884 Q 59.4064 63.2034, 58.5214 62.1534 Q 57.6514 61.0884, 56.0314 61.0884 Q 54.4114 61.0884, 53.5264 62.1384 Q 52.6564 63.1884, 52.6564 65.2884 Q 52.6564 67.4334, 53.5264 68.5134 Q 54.4114 69.5934, 56.0314 69.5934 " fill="#FF0000"/>
+</g>
+  <g id="id3:id3:id1:id1" transform="translate(0.0,118.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: CO</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">79 occurences (9.34%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: -0.162</text>
+  </g>
+</g>
+  <g id="id3:id4:id4" transform="translate(1127.2949999999998,9.5)"><g id="id3:id4:id0:id0" transform="matrix(1.0,0,0,1.0,71.25219999999999,0.0)"><!-- END OF HEADER -->
+<rect style="opacity:1.0;fill:#FFFFFF;stroke:none" width="142" height="116" x="0" y="0"> </rect>
+<path class="bond-0" d="M 93.0398,68.1098 L 72.815,60.5255" style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="bond-0" d="M 72.815,60.5255 L 52.5902,52.9412" style="fill:none;fill-rule:evenodd;stroke:#191919;stroke-width:2.0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"/>
+<path class="atom-1" d="M 49.0373 51.1748 L 50.5973 49.5848 L 48.5273 49.1648 L 48.8423 48.0998 L 50.7473 49.0598 L 50.4773 46.9748 L 51.6023 46.9598 L 51.2873 49.0448 L 53.2223 48.1448 L 53.5523 49.1648 L 51.4523 49.5548 L 52.9523 51.1598 L 52.0373 51.8198 L 51.0023 49.8398 L 49.9523 51.8198 L 49.0373 51.1748 " fill="#191919"/>
+</g>
+  <g id="id3:id4:id1:id1" transform="translate(0.0,116.0)">
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="20">SMILES: *C</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="40">39 occurences (4.61%)</text>
+    <text fill="black" font-family="Arial" font-size="15px" x="20" y="60">Average impact on prediction: -0.309</text>
+  </g>
+</g>
+</g>
+</svg>

@@ -39,6 +39,11 @@ import PIL
 
 import midPointNorm as mpn
 
+import seaborn as sns
+import scipy.cluster.hierarchy as shc
+import scipy.spatial.distance as sds
+from sklearn.cluster import AgglomerativeClustering
+
 n_types = 8
 batch_size = 1
 device = "cpu"
@@ -653,8 +658,8 @@ def findSubstructuresForReactionType(
         print(checkedCount)
 
         # TODO: temp
-        if checkedCount > 10:
-            break
+        # if checkedCount > 10:
+        #    break
 
         try:
             negativeDeltas, positiveDeltas = evaluateModel(
@@ -773,6 +778,24 @@ class StructureDeltaResult:
             maxMinDeltas[reactionType]["max"] = max(maxMinDeltas[reactionType]["max"], self.averageDelta)
         else:
             maxMinDeltas[reactionType]["min"] = min(maxMinDeltas[reactionType]["min"], self.averageDelta)
+
+
+class WeightedStructureDeltaResult:
+    def __init__(self, averageDelta: float, count: int):
+        self.averageDelta = averageDelta
+        self.count = count
+        self.countPercentage = 0
+
+    def calculateWeightedScore(self, totalStructureOccurences: int, structureMaxDelta: float, structureMinDelta: float):
+        if self.averageDelta == 0:
+            return
+
+        self.countPercentage = self.count / totalStructureOccurences
+
+        if self.averageDelta > 0:
+            self.averageDelta = self.averageDelta * self.countPercentage / structureMaxDelta
+        else:
+            self.averageDelta = self.averageDelta * self.countPercentage / structureMinDelta * -1
 
 
 def getColorFromDelta(delta, cmap, norm):
@@ -921,11 +944,118 @@ def compareReactionsBySubstructures(
                             tempData["pos"] = StructureDeltaResult(structureDeltas, reactionType)
                     data[reactionType] = tempData
 
-    # TODO Save Filtered Structures Dictionary and deltas for possible later use
-    with open(outputDir + "/filteredStructures_dict.pickle", "wb") as handle:
-        pickle.dump(filteredStructures, handle)
-    with open(outputDir + "/maxMinDeltas_dict.pickle", "wb") as handle:
-        pickle.dump(maxMinDeltas, handle)
+        # TODO Save Filtered Structures Dictionary and deltas for possible later use
+        print("Saving filtered structures dictionary and deltas...")
+        with open(outputDir + "/filteredStructures_dict.pickle", "wb") as handle:
+            pickle.dump(filteredStructures, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(outputDir + "/maxMinDeltas_dict.pickle", "wb") as handle:
+            pickle.dump(maxMinDeltas, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print("Successfully saved!")
+
+    # Calculate weighted scores (delta * occurences / combined occurences)
+    weightedFilteredStructures = {}
+    for mol, data in filteredStructures.items():
+        totalStructureOccurences = 0
+        structureData = {}
+
+        structureMaxDelta = 0
+        structureMinDelta = 0
+
+        for reactionType in evaluatedReactionTypes:
+            reactionTypeData = data[reactionType]
+            reactionTypeScore = 0
+            reactionTypeCount = 0
+            if "neg" in reactionTypeData:
+                structureCount = reactionTypeData["neg"].count
+                totalStructureOccurences += structureCount
+                reactionTypeScore += reactionTypeData["neg"].averageDelta * structureCount
+                reactionTypeCount += structureCount
+            if "pos" in reactionTypeData:
+                structureCount = reactionTypeData["pos"].count
+                totalStructureOccurences += structureCount
+                reactionTypeScore += reactionTypeData["pos"].averageDelta * structureCount
+                reactionTypeCount += structureCount
+
+            structureMaxDelta = max(structureMaxDelta, reactionTypeScore)
+            structureMinDelta = min(structureMinDelta, reactionTypeScore)
+
+            # if reactionTypeCount > 0:
+            #    reactionTypeScore = reactionTypeScore / reactionTypeCount
+
+            structureData[reactionType] = WeightedStructureDeltaResult(reactionTypeScore, reactionTypeCount)
+
+        # structureMaxDelta /= totalStructureOccurences
+        # tructureMinDelta /= totalStructureOccurences
+
+        for weightedStructureDeltaResult in structureData.values():
+            weightedStructureDeltaResult.calculateWeightedScore(
+                totalStructureOccurences, structureMaxDelta, structureMinDelta
+            )
+        weightedFilteredStructures[mol] = structureData
+
+    # Hierarchical clustering
+    dataframeDict = {}
+    dataFrameArray = []
+    molIds = {}
+    count = 0
+    for mol, data in weightedFilteredStructures.items():
+        molId = f"mol_{count}"
+        molIds[molId] = mol
+        molData = []
+        for reactionType in evaluatedReactionTypes:
+            molData.append(data[reactionType].averageDelta)
+        dataframeDict[molId] = molData
+        dataFrameArray.append(molData)
+        count += 1
+    dataFrame = pd.DataFrame.from_dict(
+        dataframeDict, orient="index", columns=[reactionTypes[i] for i in evaluatedReactionTypes]
+    )
+
+    clusteringMethod = "ward"
+
+    plt.figure(figsize=(10, 7))
+    plt.title("Dendrogram")
+    dend = shc.dendrogram(
+        shc.linkage(dataFrame, method=clusteringMethod, optimal_ordering=True),
+        labels=[Chem.MolToSmiles(molIds[f"mol_{molId}"]) for molId in range(count)],
+    )
+    plt.xticks(rotation=90)
+
+    # print("My linkage")
+    # print(shc.linkage(dataFrame.T, method=clusteringMethod)) # Columns Linkage
+    # print(shc.linkage(dataFrame, method=clusteringMethod))  # Rows Linkage
+
+    # print(dend)
+
+    # cluster = AgglomerativeClustering(n_clusters=len(evaluatedReactionTypes), affinity="euclidean", linkage="ward")
+    # cluster.fit_predict(dataFrameArray)
+
+    g = sns.clustermap(dataFrameArray, method=clusteringMethod, cmap="PiYG")
+    sortedData = g.data2d
+    sortedRows = sortedData.index
+    sortedColumns = sortedData.columns
+
+    g.ax_heatmap.set_xticklabels([reactionTypes[reactionType] for reactionType in sortedColumns])
+    g.ax_heatmap.set_yticklabels([Chem.MolToSmiles(molIds[f"mol_{molId}"]) for molId in sortedRows])
+    g.ax_heatmap.set_title("Clustermap")
+
+    plt.show()
+
+    return
+
+    # Calculated weighted norms
+    weightedStructuresNorms = {}
+    for mol, data in weightedFilteredStructures.items():
+        maxDelta = 1
+        minDelta = -1
+        for reactionTypeData in data.values():
+            maxDelta = max(maxDelta, reactionTypeData.averageDelta)
+            minDelta = min(minDelta, reactionTypeData.averageDelta)
+        weightedStructuresNorms[mol] = mpn.MidPointNorm(
+            midpoint=0,
+            vmin=minDelta,
+            vmax=maxDelta,
+        )
 
     # Prepare substructures images
     mol_id = 0
@@ -972,25 +1102,40 @@ def compareReactionsBySubstructures(
         os.makedirs(outputDir)
     workbook = xlsxwriter.Workbook(outputDir + "/" + outputName + ".xlsx")
 
-    # Create two sheets - different color comparison
+    # Create 2 sheets - different color comparison
     # Sheet 1 - color relative to reaction type deltas
     # Sheet 2 - color relative to structure deltas
     worksheet1 = workbook.add_worksheet("Color by Reaction Type")
     worksheet2 = workbook.add_worksheet("Color by Structure")
+    # Additional 2 sheets for weighted comparison and clustering of structures
+    worksheet3 = workbook.add_worksheet("Weighted Color by Structure")
+    worksheet4 = workbook.add_worksheet("Clustered Structures")
 
     for i in evaluatedReactionTypes:
         worksheet1.write(0, i + 2, reactionTypes[i])
         worksheet2.write(0, i + 2, reactionTypes[i])
+        worksheet3.write(0, i + 2, reactionTypes[i])
+        worksheet4.write(0, i + 2, reactionTypes[sortedColumns[i]])
 
     # Header
     worksheet1.write("A1", "Structure")
     worksheet2.write("A1", "Structure")
+    worksheet3.write("A1", "Structure")
+    worksheet4.write("A1", "Structure")
     worksheet1.write("B1", "SMILES")
     worksheet2.write("B1", "SMILES")
+    worksheet3.write("B1", "SMILES")
+    worksheet4.write("B1", "SMILES")
     worksheet1.set_column_pixels(
         "B:B", 160, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "right": 2})
     )
     worksheet2.set_column_pixels(
+        "B:B", 160, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "right": 2})
+    )
+    worksheet3.set_column_pixels(
+        "B:B", 160, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "right": 2})
+    )
+    worksheet4.set_column_pixels(
         "B:B", 160, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "right": 2})
     )
     worksheet1.set_row_pixels(
@@ -999,12 +1144,22 @@ def compareReactionsBySubstructures(
     worksheet2.set_row_pixels(
         0, 26, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "bottom": 2})
     )
+    worksheet3.set_row_pixels(
+        0, 26, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "bottom": 2})
+    )
+    worksheet4.set_row_pixels(
+        0, 26, cell_format=workbook.add_format({"bold": True, "align": "center", "valign": "vcenter", "bottom": 2})
+    )
     worksheet1.freeze_panes(1, 0)
     worksheet2.freeze_panes(1, 0)
+    worksheet3.freeze_panes(1, 0)
+    worksheet4.freeze_panes(1, 0)
 
     # Columns formatting
     worksheet1.set_column_pixels(2, len(evaluatedReactionTypes) + 1, 160)
     worksheet2.set_column_pixels(2, len(evaluatedReactionTypes) + 1, 160)
+    worksheet3.set_column_pixels(2, len(evaluatedReactionTypes) + 1, 160)
+    worksheet4.set_column_pixels(2, len(evaluatedReactionTypes) + 1, 160)
 
     # Results
     mol_id = 0
@@ -1016,6 +1171,9 @@ def compareReactionsBySubstructures(
         maxImageWidth = max(maxImageWidth, imageWidth + padding)
     worksheet1.set_column_pixels(0, 0, maxImageWidth)
     worksheet2.set_column_pixels(0, 0, maxImageWidth)
+    worksheet3.set_column_pixels(0, 0, maxImageWidth)
+    worksheet4.set_column_pixels(0, 0, maxImageWidth)
+
     # Prepare colormap and norms
     cmap = mpl.cm.get_cmap("PiYG")
     norms1 = {
@@ -1054,6 +1212,17 @@ def compareReactionsBySubstructures(
                 }
             ),
         )
+        worksheet3.set_row_pixels(
+            mol_id + 1,
+            rowHeight,
+            cell_format=workbook.add_format(
+                {
+                    "bottom": 3,
+                    "align": "center",
+                    "valign": "vcenter",
+                }
+            ),
+        )
         worksheet1.insert_image(
             "A" + str(mol_id + 2),
             imagePath,
@@ -1064,8 +1233,16 @@ def compareReactionsBySubstructures(
             imagePath,
             {"x_offset": (maxImageWidth - imageWidth) / 2, "y_offset": int((rowHeight - imageHeight) / 2)},
         )
+        worksheet3.insert_image(
+            "A" + str(mol_id + 2),
+            imagePath,
+            {"x_offset": (maxImageWidth - imageWidth) / 2, "y_offset": int((rowHeight - imageHeight) / 2)},
+        )
         worksheet1.write("B" + str(mol_id + 2), Chem.MolToSmiles(mol))
         worksheet2.write("B" + str(mol_id + 2), Chem.MolToSmiles(mol))
+        worksheet3.write("B" + str(mol_id + 2), Chem.MolToSmiles(mol))
+
+        # Non-weighted results
         for reactionType in evaluatedReactionTypes:
             result = filteredStructures[mol][reactionType]
             resultStrings = []
@@ -1124,7 +1301,85 @@ def compareReactionsBySubstructures(
             else:
                 worksheet1.write(mol_id + 1, reactionType + 2, "/")
                 worksheet2.write(mol_id + 1, reactionType + 2, "/")
+
+        # Weighted results
+        textboxHeight = rowHeight - 2
+        for reactionType in evaluatedReactionTypes:
+            result = weightedFilteredStructures[mol][reactionType]  # WeightedStructureDeltaResult
+            if result.averageDelta != 0:
+                resultColor = getColorFromDelta(result.averageDelta, cmap, weightedStructuresNorms[mol])
+                resultString = f"{round(result.averageDelta, 3)} - {result.count} occ{'s' if result.count > 1 else ''} ({round(result.countPercentage * 100, 1)}%)"
+                worksheet3.insert_textbox(
+                    mol_id + 1,
+                    reactionType + 2,
+                    resultString,
+                    options={
+                        "width": 158,
+                        "height": textboxHeight,
+                        "x_offset": 1,
+                        "y_offset": 1,
+                        # TODO: alignment and color
+                        "fill": {"color": resultColor},
+                        "align": {"vertical": "middle", "horizontal": "center"},
+                    },
+                )
+            else:
+                worksheet3.write(mol_id + 1, reactionType + 2, "/")
+
         mol_id += 1
+
+    rowIndex = 0
+    for structureId in sortedRows:
+        molId = f"mol_{structureId}"
+        mol = molIds[molId]
+        imagePath = tempImagesDir + "/molStruct_" + str(structureId) + ".png"
+        imageWidth, imageHeight = PIL.Image.open(imagePath).size
+        rowHeight = max(minRowHeight, imageHeight + padding)
+        worksheet4.set_row_pixels(
+            rowIndex + 1,
+            rowHeight,
+            cell_format=workbook.add_format(
+                {
+                    "bottom": 3,
+                    "align": "center",
+                    "valign": "vcenter",
+                }
+            ),
+        )
+        worksheet4.insert_image(
+            "A" + str(rowIndex + 2),
+            imagePath,
+            {"x_offset": (maxImageWidth - imageWidth) / 2, "y_offset": int((rowHeight - imageHeight) / 2)},
+        )
+        worksheet4.write("B" + str(rowIndex + 2), Chem.MolToSmiles(mol))
+        textboxHeight = rowHeight - 2
+
+        columnIndex = 0
+        for reactionType in sortedColumns:
+            result = weightedFilteredStructures[mol][reactionType]  # WeightedStructureDeltaResult
+            if result.averageDelta != 0:
+                resultColor = getColorFromDelta(result.averageDelta, cmap, weightedStructuresNorms[mol])
+                resultString = f"{round(result.averageDelta, 3)} - {result.count} occ{'s' if result.count > 1 else ''} ({round(result.countPercentage * 100, 1)}%)"
+                worksheet4.insert_textbox(
+                    rowIndex + 1,
+                    columnIndex + 2,
+                    resultString,
+                    options={
+                        "width": 158,
+                        "height": textboxHeight,
+                        "x_offset": 1,
+                        "y_offset": 1,
+                        # TODO: alignment and color
+                        "fill": {"color": resultColor},
+                        "align": {"vertical": "middle", "horizontal": "center"},
+                    },
+                )
+            else:
+                worksheet4.write(rowIndex + 1, columnIndex + 2, "/")
+
+            columnIndex += 1
+
+        rowIndex += 1
 
     workbook.close()
 

@@ -24,10 +24,14 @@ from torch import nn
 from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn.functional as F
 
+from utils.results_types import save_k_fold_results
+
+np.seterr(invalid='ignore')
+
 torch.cuda.empty_cache()
 final_results_dir = '/home/bsmrdelj/local/git/magistrska/dgl/classification/results/reaction_type'
 
-epochs = 1000
+epochs = 500
 n_types = 8
 batch_size = 200
 learning_rate = 0.001
@@ -64,16 +68,21 @@ class ValidationDataset(DGLDataset):
         super(ValidationDataset, self).__init__(
             name='ValidationDataset',
             raw_dir='/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_with_master_node',
-            save_dir='/home/bsmrdelj/local/git/magistrska/dgl/data/dataset_reaction_type',
             verbose=True,
-            force_reload=True
         )
 
-        def __len__(self):
-            return len(self.y_valid)
+    def save(self):
+        return
+    def load(self):
+        return
+    def process(self):
+        return
+    
+    def __len__(self):
+        return len(self.y_valid)
 
-        def __getitem__(self, index):
-            return self.X_valid[index], self.y_valid[index]
+    def __getitem__(self, index):
+        return self.X_valid[index], self.y_valid[index]
 
 class ReactionsDataset(DGLDataset):
     def __init__(self, raw_dir: str, save_dir: str, labelsFile: str, force_reload = False):
@@ -99,8 +108,8 @@ class ReactionsDataset(DGLDataset):
         for reaction, type in zip(reactions, types):
             
             #TODO: temp
-            #if (count > 5):
-                #break
+            #if (count > 50):
+             #   break
             
             g = self.loadGraph(self.raw_dir + '/' + reaction)
             if (g is not None):
@@ -110,18 +119,21 @@ class ReactionsDataset(DGLDataset):
             print(str(round((count/len(reactions) * 100), 2)) + "%")
             count +=1
         
-        self.graphs = torch.tensor(self.graphs)
         self.labels = torch.LongTensor(self.labels)
 
         split = StratifiedShuffleSplit(n_splits=1, test_size=0.1).split(self.graphs, self.labels)
         train_index, valid_index = next(split)
 
         # Training data
-        self.X_train = self.graphs[train_index]
+        self.X_train = []
+        for index in train_index:
+            self.X_train.append(self.graphs[index])
         self.y_train = self.labels[train_index]
 
         # Final validation data
-        self.X_valid = self.graphs[valid_index]
+        self.X_valid = []
+        for index in valid_index:
+            self.X_valid.append(self.graphs[index])
         self.y_valid = self.labels[valid_index]
 
     def generatevalidationDataset(self):
@@ -445,14 +457,13 @@ def train(model, device, data_loader, opt, loss_fn):
         _, top_class = torch.exp(log_ps).topk(1, dim=1)
         
         actual_labels_batch = labels.cpu().numpy().astype(int)
-        predicted_labels_batch = top_class.detach().numpy().flatten()
+        predicted_labels_batch = top_class.cpu().numpy().flatten()
 
         predicted_labels_train = np.concatenate((predicted_labels_train, predicted_labels_batch))
         actual_labels_train = np.concatenate((actual_labels_train, actual_labels_batch))
 
         loss = loss_fn(log_ps, labels)
-        train_loss.append(loss.item())
-        
+
         loss.backward()
         opt.step()
         train_loss += loss.item()
@@ -473,13 +484,14 @@ def test(model, device, data_loader, loss_fn):
 
     for g, labels in data_loader:
         g = g.to(device)
+        labels = labels.to(device)
         log_ps = model(g, g.edata['feat'], g.ndata['feat'])
         test_loss += loss_fn(log_ps, labels).item()
         ps = torch.exp(log_ps)
         _, top_class = ps.topk(1, dim=1)
 
         actual_labels_batch = labels.cpu().numpy().astype(int)
-        predicted_labels_batch = top_class.detach().numpy().flatten()
+        predicted_labels_batch = top_class.cpu().numpy().flatten()
 
         predicted_labels_test = np.concatenate((predicted_labels_test, predicted_labels_batch))
         actual_labels_test = np.concatenate((actual_labels_test, actual_labels_batch))
@@ -503,12 +515,11 @@ def reset_weights(m):
     '''
     for layer in m.children():
         if hasattr(layer, 'reset_parameters'):
-            print(f'Reset trainable parameters of layer = {layer}')
             layer.reset_parameters()
 
 def classification_metrics(actual_labels, predicted_labels):
     cm = confusion_matrix(actual_labels, predicted_labels)
-    
+
     FP = cm.sum(axis=0) - np.diag(cm) 
     FN = cm.sum(axis=1) - np.diag(cm)
     TP = np.diag(cm)
@@ -566,7 +577,7 @@ dataset = ReactionsDataset(
     '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_with_master_node',
     '/home/bsmrdelj/local/git/magistrska/dgl/data/dataset_reaction_type',
     '/home/bsmrdelj/local/git/magistrska/classification/reaction_type_classification/data/reactions_all.csv',
-    force_reload=True
+    force_reload=False
 )
 validation_dataset = dataset.generatevalidationDataset()
 
@@ -574,7 +585,7 @@ validation_dataset = dataset.generatevalidationDataset()
 kfold = StratifiedKFold(n_splits=k_folds, shuffle=True)
 k_fold_results = {}
 
-for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.graphs, dataset.labels)):
+for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.X_train, dataset.y_train)):
     print(f'FOLD {fold}')
     print('--------------------------------')
 
@@ -676,6 +687,11 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.graphs, dataset
         drop_last = False,
         collate_fn=collate_dgl
     )
+    valid_dataloader = GraphDataLoader(
+        validation_dataset,
+        batch_size = len(validation_dataset),
+        shuffle = False
+    )
 
     node_feat_dim = dataset[0][0].ndata['feat'].size()[-1]
     edge_feat_dim = dataset[0][0].edata['feat'].size()[-1]
@@ -740,35 +756,48 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.graphs, dataset
     model.eval()
     with torch.no_grad():
         
-        g = validation_dataset.X_valid.to(device)
-        labels = validation_dataset.y_valid.to(device)
+        for g, labels in valid_dataloader:
+            
+            g = g.to(device)
+            labels = labels.to(device)
 
-        log_ps = model(g, g.edata['feat'], g.ndata['feat'])
-        valid_loss = loss_fn(log_ps, labels).item()
-        
-        ps = torch.exp(log_ps)
-        _, top_class = ps.topk(1, dim=1)
+            log_ps = model(g, g.edata['feat'], g.ndata['feat'])
+            valid_loss = loss_fn(log_ps, labels).item()
+            
+            ps = torch.exp(log_ps)
+            _, top_class = ps.topk(1, dim=1)
 
-        actual_labels_valid = labels.cpu().numpy().astype(int)
-        predicted_labels_valid = top_class.detach().numpy().flatten()
-        
-        k_fold_results[fold]["predicted_labels_all"] = predicted_labels_valid
-        k_fold_results[fold]["actual_labels_all"] = actual_labels_valid
-        k_fold_results[fold]["predicted_probabilities_all"] = ps
-        k_fold_results[fold]["valid"]["loss"] = valid_loss
-        
-        classification_results_valid = classification_metrics(actual_labels_valid, predicted_labels_valid)
-        for (type, results) in classification_results_valid.items():
-            for (metric, value) in results.items():
-                k_fold_results[fold]["valid"][type][metric] = value
+            actual_labels_valid = labels.cpu().numpy().astype(int)
+            predicted_labels_valid = top_class.cpu().numpy().flatten()
+            
+            k_fold_results[fold]["predicted_labels_all"] = predicted_labels_valid
+            k_fold_results[fold]["actual_labels_all"] = actual_labels_valid
+            k_fold_results[fold]["predicted_probabilities_all"] = ps.cpu().numpy()
+            k_fold_results[fold]["valid"]["loss"] = valid_loss
+            
+            classification_results_valid = classification_metrics(actual_labels_valid, predicted_labels_valid)
+            for (type, results) in classification_results_valid.items():
+                for (metric, value) in results.items():
+                    k_fold_results[fold]["valid"][type][metric] = value
 
-        print(
-            f'Validation results for fold {fold}: ',
-            "Loss: {:.3f}.. ".format(valid_loss),
-            "Accuracy: {:.3f}".format(k_fold_results[fold]["valid"]["macro"]["accuracy"]),
-            "F1: {:.3f}".format(k_fold_results[fold]["valid"]["weighted"]["f1"])
-        )
+            print(
+                f'Validation results for fold {fold}: ',
+                "Loss: {:.3f}.. ".format(valid_loss),
+                "Accuracy: {:.3f}".format(k_fold_results[fold]["valid"]["macro"]["accuracy"]),
+                "F1: {:.3f}".format(k_fold_results[fold]["valid"]["weighted"]["f1"])
+            )
 
     model.train()
 
-print(k_fold_results)
+save_k_fold_results(
+    k_folds, 
+    epochs, 
+    reaction_types,
+    k_fold_results, 
+    final_results_dir, 
+    "results.txt"
+)
+
+saved_results = open(final_results_dir + "/results.pkl", "wb")
+pickle.dump(k_fold_results, saved_results)
+saved_results.close()

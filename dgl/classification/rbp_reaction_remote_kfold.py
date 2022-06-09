@@ -32,16 +32,16 @@ torch.cuda.empty_cache()
 np.seterr(invalid='ignore')
 
 final_results_dir = '/home/bsmrdelj/local/git/magistrska/dgl/classification/results/rbp_reaction'
-predictions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/reaction_type_classification/results/final/all_predictions.csv'
-
-# TODO: train predictions
-predictions_file = pd.read_csv(predictions_csv)
+# TODO: add train predictions
+#predictions_csv = 'C:/Users/Benjamin/Documents/Datoteke_za_solo/MAG/magistrska/classification/reaction_type_classification/results/final/all_predictions.csv'
+#predictions_file = pd.read_csv(predictions_csv)
 
 n_types = 8
 batch_size = 100
 k_folds = 5
+learning_rate = 0.001
 out_dim = 1
-epochs = 1000
+epochs = 200
 device = 'cuda:0'
 
 # Dataset
@@ -92,8 +92,8 @@ class ReactionsDataset(DGLDataset):
         for reaction, type in zip(reactions, types):
             
             # TODO: temp
-            #if (count > 5):
-                #break
+            #if (count > 50):
+            #    break
             
             g = self.loadGraph(self.raw_dir + '/' + reaction)
             if (g is not None):
@@ -440,12 +440,12 @@ def train(model, device, data_loader, opt, loss_fn):
 
        # Classification Score
         actual_labels_batch = labels.cpu().numpy().astype(int)
-        predicted_labels_batch = torch.round(torch.sigmoid(logits)).detach().numpy().flatten().astype(int)
+        predicted_labels_batch = torch.round(torch.sigmoid(logits)).detach().cpu().numpy().flatten().astype(int)
 
         predicted_labels_train = np.concatenate((predicted_labels_train, predicted_labels_batch))
         actual_labels_train = np.concatenate((actual_labels_train, actual_labels_batch))
 
-        loss = loss_fn(logits.flatten(), labels)
+        loss = loss_fn(logits.flatten(), labels.float())
         train_loss += loss.item()
         
         loss.backward()
@@ -466,15 +466,16 @@ def test(model, device, data_loader, loss_fn):
 
     for g, labels in data_loader:
         g = g.to(device)
+        labels = labels.to(device)
         logits = model(g, g.edata['feat'], g.ndata['feat'])
 
         actual_labels_batch = labels.cpu().numpy().astype(int)
-        predicted_labels_batch = torch.round(torch.sigmoid(logits)).detach().numpy().flatten().astype(int)
+        predicted_labels_batch = torch.round(torch.sigmoid(logits)).detach().cpu().numpy().flatten().astype(int)
 
         predicted_labels_test = np.concatenate((predicted_labels_test, predicted_labels_batch))
         actual_labels_test = np.concatenate((actual_labels_test, actual_labels_batch))
 
-        loss = loss_fn(logits.flatten(), labels)
+        loss = loss_fn(logits.flatten(), labels.float())
         test_loss += loss.item()
     
     return test_loss / len(data_loader), predicted_labels_test, actual_labels_test
@@ -521,7 +522,7 @@ dataset = ReactionsDataset(
     '/home/bsmrdelj/local/git/magistrska/dgl/data/graphs_with_master_node',
     '/home/bsmrdelj/local/git/magistrska/dgl/data/dataset_RBP',
     '/home/bsmrdelj/local/git/magistrska/classification/encyme_reaction_classification/data/reactions_all.csv',
-    force_reload=False
+    force_reload=True
 )
 validation_dataset = dataset.generatevalidationDataset()
 
@@ -615,7 +616,7 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.X_train, datase
         learn_beta=True
     ).to(device)
     model.apply(reset_weights)
-    opt = torch.optim.Adam(model.parameters(), lr=0.01, )
+    opt = torch.optim.Adam(model.parameters(), lr=learning_rate, )
     loss_fn = nn.BCEWithLogitsLoss()
 
     # For final check
@@ -663,51 +664,20 @@ for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.X_train, datase
 
     with torch.no_grad():
         for g, labels in valid_dataloader:
-
             g = g.to(device)
             labels = labels.to(device)
-
-            log_ps = model(g, g.edata['feat'], g.ndata['feat'])
-            valid_loss = loss_fn(log_ps, labels).item()
-            
-            ps = torch.exp(log_ps)
-            _, top_class = ps.topk(1, dim=1)
-
-            actual_labels_valid = labels.cpu().numpy().astype(int)
-            predicted_labels_valid = top_class.cpu().numpy().flatten()
-            
-            k_fold_results[fold]["predicted_labels_all"] = predicted_labels_valid
-            k_fold_results[fold]["actual_labels_all"] = actual_labels_valid
-            k_fold_results[fold]["predicted_probabilities_all"] = ps.cpu().numpy()
-            k_fold_results[fold]["valid"]["loss"] = valid_loss
-            
-            classification_results_valid = classification_metrics(actual_labels_valid, predicted_labels_valid)
-            for (type, results) in classification_results_valid.items():
-                for (metric, value) in results.items():
-                    k_fold_results[fold]["valid"][type][metric] = value
-
-            print(
-                f'Validation results for fold {fold}: ',
-                "Loss: {:.3f}.. ".format(valid_loss),
-                "Accuracy: {:.3f}".format(k_fold_results[fold]["valid"]["macro"]["accuracy"]),
-                "F1: {:.3f}".format(k_fold_results[fold]["valid"]["weighted"]["f1"])
-            )
-
-    with torch.no_grad():
-        for g, labels in valid_dataloader:
-            g = g.to(device)
             logits = model(g, g.edata['feat'], g.ndata['feat'])
 
             actual_labels_valid = labels.cpu().numpy().astype(int)
-            predicted_labels_valid = torch.round(torch.sigmoid(logits)).detach().numpy().flatten().astype(int)
-            predicted_probabilities_valid = torch.sigmoid(logits).flatten()
+            predicted_labels_valid = torch.round(torch.sigmoid(logits)).detach().cpu().numpy().flatten().astype(int)
+            predicted_probabilities_valid = torch.sigmoid(logits).detach().cpu().numpy().flatten()
 
             k_fold_results[fold]["predicted_labels_all"] = predicted_labels_valid
             k_fold_results[fold]["actual_labels_all"] = actual_labels_valid
             k_fold_results[fold]["predicted_probabilities_all"] = predicted_probabilities_valid
 
             classification_results_valid= classification_metrics(actual_labels_valid, predicted_labels_valid)
-            valid_loss = loss_fn(logits.flatten(), labels).item()
+            valid_loss = loss_fn(logits.flatten(), labels.float()).item()
 
             k_fold_results[fold]["valid"]["loss"] = valid_loss
             for (metric, value) in classification_results_valid.items():
